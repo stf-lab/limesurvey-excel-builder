@@ -20,8 +20,8 @@ An Excel template + R conversion script that lets you author LimeSurvey surveys 
 
 1. Open `limesurvey_survey_builder.xlsx` in Excel
 2. Edit the **Survey Design** sheet — add your questions, answers, and settings
-3. Run `xlsx_to_limesurvey_tsv.R` in RStudio
-4. In LimeSurvey: **Create Survey → Import → select the generated `.txt` file**
+3. Run `xlsx_to_limesurvey_tsv.R` in RStudio. The script will generate a *.txt file
+4. In LimeSurvey: **Create Survey → Import → select the generated `*.txt` file**
 
 ## Files
 
@@ -34,7 +34,7 @@ An Excel template + R conversion script that lets you author LimeSurvey surveys 
 
 ### Excel Template
 
-- **Color-coded rows** — conditional formatting highlights groups (blue), questions (teal), subquestions (yellow), answers (pink), and settings (green)
+- **Color-coded rows** — conditional formatting highlights groups, questions, subquestions, answers, and settings in different colors
 - **Dropdown validation** — class, mandatory, and other columns have dropdown lists
 - **4 reference sheets** — Question Types, Relevance & Validation, Survey Settings, Instructions
 - **41 advanced attribute columns** — array filtering, sliders, date ranges, validation, and more
