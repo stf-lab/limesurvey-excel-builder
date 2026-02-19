@@ -3,6 +3,9 @@
 !README.md
 !LICENSE
 
+# Shiny app (deployed separately)
+shiny/
+
 # R workspace
 .Rhistory
 .Rdata
