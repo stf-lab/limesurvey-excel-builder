@@ -1,0 +1,675 @@
+﻿id	related_id	class	type/scale	name	relevance	text	help	language	validation	mandatory	other	default	same_default	always_hide	array_filter	date_max	date_min	dropdown_dates	em_validation_q	em_validation_q_tip	em_validation_sq	em_validation_sq_tip	equals_num_value	exclude_all_others	hide_tip	max_answers	max_num_value_n	maximum_chars	min_answers	min_num_value_n	other_replace_text
+		S		sid		123456																									
+		S		admin		Survey Admin																									
+		S		adminemail		admin@example.com																									
+		S		anonymized		N																									
+		S		format		G																									
+		S		language		en																									
+		S		datestamp		Y																									
+		S		ipaddr		N																									
+		S		showprogress		Y																									
+		S		allowprev		Y																									
+		S		printanswers		Y																									
+		S		showgroupinfo		D																									
+		S		showqnumcode		X																									
+		S		additional_languages		es fr ro																									
+		SL		surveyls_title		Comprehensive Health & Lifestyle Survey		en																							
+		SL		surveyls_title		Encuesta integral de salud y estilo de vida		es																							
+		SL		surveyls_title		Enquête complète sur la santé et le mode de vie		fr																							
+		SL		surveyls_title		Studiu complet privind sănătatea și stilul de viață		ro																							
+		SL		surveyls_description		<p>A comprehensive survey covering demographics, health behaviors, nutrition, and wellbeing.</p>		en																							
+		SL		surveyls_description		<p>Una encuesta integral que abarca datos demográficos, comportamientos de salud, nutrición y bienestar.</p>		es																							
+		SL		surveyls_description		<p>Une enquête complète couvrant les données démographiques, les comportements liés à la santé, la nutrition et le bien-être.</p>		fr																							
+		SL		surveyls_description		<p>Un studiu complet privind datele demografice, comportamentele legate de sănătate, nutriția și bunăstarea.</p>		ro																							
+		SL		surveyls_welcometext		<p>Welcome! This survey takes approximately 10 minutes.</p>		en																							
+		SL		surveyls_welcometext		<p>¡Bienvenido! Esta encuesta toma aproximadamente 10 minutos.</p>		es																							
+		SL		surveyls_welcometext		<p>Bienvenue ! Cette enquête prend environ 10 minutes.</p>		fr																							
+		SL		surveyls_welcometext		<p>Bine ați venit! Acest chestionar durează aproximativ 10 minute.</p>		ro																							
+		SL		surveyls_endtext		<p>Thank you for completing this survey!</p>		en																							
+		SL		surveyls_endtext		<p>¡Gracias por completar esta encuesta!</p>		es																							
+		SL		surveyls_endtext		<p>Merci d'avoir complété cette enquête !</p>		fr																							
+		SL		surveyls_endtext		<p>Vă mulțumim pentru completarea chestionarului!</p>		ro																							
+		G		demographics		<p>Section 1: Demographics</p>		en																							
+		Q	L	gender		<p>What is your gender?</p>		en		Y																					
+		A	0	M		Male		en																							
+		A	0	F		Female		en																							
+		A	0	O		Other		en																							
+		Q	N	age		<p>What is your age (in years)?</p>		en		Y															1		120			15	
+		Q	D	dob		<p>What is your date of birth?</p>		en								2010-12-31	1900-01-01	1													
+		Q	!	education		<p>What is your highest level of education?</p>		en		Y																					
+		A	0	A1		No formal education		en																							
+		A	0	A2		Primary school		en																							
+		A	0	A3		Secondary school		en																							
+		A	0	A4		University degree		en																							
+		A	0	A5		Postgraduate degree		en																							
+		Q	S	country		<p>In which country do you currently reside?</p>		en	/^[a-zA-Z\s]+$/	Y																		50			
+		Q	S	email		<p>What is your email address?</p>	<p>For follow-up purposes only</p>	en	/^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$/																						
+		Q	S	phone		<p>What is your phone number?</p>	<p>Include country code</p>	en	/^\+?[0-9\s\-\(\)]{7,20}$/																						
+		Q	N	hhsize		<p>How many people live in your household (including yourself)?</p>		en		Y																	30			1	
+		Q	X	infohealth		<p>The following questions ask about your health behaviors. Please answer honestly.</p>		en																							
+		G		healthbehaviors		<p>Section 2: Health Behaviors</p>		en																							
+		Q	L	smoking		<p>Do you currently smoke tobacco?</p>		en		Y	Y																				Other (please specify)
+		A	0	A1		Yes, daily		en																							
+		A	0	A2		Yes, occasionally		en																							
+		A	0	A3		No, I quit		en																							
+		A	0	A4		No, never smoked		en																							
+		Q	N	cigsperday	smoking == 'A1'	<p>How many cigarettes do you smoke per day?</p>		en		Y																	100			1	
+		Q	N	yearssmoking	smoking == 'A1' || smoking == 'A2' || smoking == 'A3'	<p>For how many years have you smoked (or did you smoke)?</p>		en																			80			0	
+		Q	N	quityear	smoking == 'A3'	<p>In what year did you quit smoking?</p>		en																			2026			1950	
+		Q	Y	alcohol		<p>Do you consume alcoholic beverages?</p>		en		Y																					
+		Q	L	alcoholfreq	alcohol == 'Y'	<p>How often do you consume alcohol?</p>		en		Y																					
+		A	0	A1		Daily		en																							
+		A	0	A2		Several times a week		en																							
+		A	0	A3		Once a week		en																							
+		A	0	A4		A few times a month		en																							
+		A	0	A5		Rarely		en																							
+		Q	N	drinkssession	alcohol == 'Y'	<p>How many standard drinks per session?</p>	<p>1 standard drink = 1 beer (330ml) / 1 glass wine (150ml) / 1 shot spirits</p>	en																			50			1	
+		Q	M	exercise		<p>Which physical activities do you regularly engage in? (select all that apply)</p>		en			Y													NONE					1		
+		SQ	0	SQ001		Walking / hiking		en																							
+		SQ	0	SQ002		Running / jogging		en																							
+		SQ	0	SQ003		Swimming		en																							
+		SQ	0	SQ004		Cycling		en																							
+		SQ	0	SQ005		Team sports		en																							
+		SQ	0	SQ006		Gym / weight training		en																							
+		SQ	0	SQ007		Yoga / Pilates		en																							
+		SQ	0	NONE		None - I do not exercise		en																							
+		Q	L	exercisefreq	exercise_SQ001=='Y' || exercise_SQ002=='Y' || exercise_SQ003=='Y' || exercise_SQ004=='Y' || exercise_SQ005=='Y' || exercise_SQ006=='Y' || exercise_SQ007=='Y'	<p>How many times per week do you exercise?</p>		en																							
+		A	0	A1		Once		en																							
+		A	0	A2		2-3 times		en																							
+		A	0	A3		4-5 times		en																							
+		A	0	A4		Daily		en																							
+		Q	K	bodymeasures		<p>Please enter your height and weight:</p>		en		Y																					
+		SQ	0	height		Height (cm)		en																							
+		SQ	0	weight		Weight (kg)		en																							
+		Q	*	bmi		<p>{bodymeasures_weight.NAOK / ((bodymeasures_height.NAOK/100) * (bodymeasures_height.NAOK/100))}</p>		en						1																	
+		Q	X	bmidisplay	!is_empty(bodymeasures_height) && !is_empty(bodymeasures_weight)	<p>Your BMI: <strong>{round(bmi,1)}</strong></p><p>{if(bmi<18.5,'Underweight',if(bmi<25,'Normal',if(bmi<30,'Overweight','Obese')))}</p>		en																							
+		G		nutrition		<p>Section 3: Nutrition & Diet</p>		en																							
+		Q	F	dietfreq		<p>How often do you consume the following?</p>	<p>Select one option per row</p>	en		Y																					
+		SQ	0	SQ001		Fresh fruits		en																							
+		SQ	0	SQ002		Fresh vegetables		en																							
+		SQ	0	SQ003		Whole grains		en																							
+		SQ	0	SQ004		Red meat		en																							
+		SQ	0	SQ005		Fast food		en																							
+		SQ	0	SQ006		Sugary drinks		en																							
+		SQ	0	SQ007		Dairy products		en																							
+		A	0	A1	1	Daily		en																							
+		A	0	A2	2	Several times/week		en																							
+		A	0	A3	3	Once a week		en																							
+		A	0	A4	4	Few times/month		en																							
+		A	0	A5	5	Rarely/Never		en																							
+		Q	N	waterglasses		<p>How many glasses of water do you drink per day?</p>		en																			30			0	
+		Q	5	mealsregular		<p>How regularly do you eat three main meals per day? (1=Never, 5=Always)</p>		en																							
+		Q	P	allergies		<p>Do you have any food allergies or intolerances? (select and add details)</p>		en			Y																				
+		SQ	0	SQ001		Gluten		en																							
+		SQ	0	SQ002		Lactose/Dairy		en																							
+		SQ	0	SQ003		Nuts		en																							
+		SQ	0	SQ004		Seafood		en																							
+		SQ	0	SQ005		None		en																							
+		Q	K	mealpct		<p>What percentage of meals come from each source?</p>	<p>Must add up to 100%</p>	en															100				100			0	
+		SQ	0	SQ001		Home-cooked		en																							
+		SQ	0	SQ002		Restaurant		en																							
+		SQ	0	SQ003		Takeaway/delivery		en																							
+		SQ	0	SQ004		Canteen		en																							
+		G		wellbeing		<p>Section 4: Wellbeing & Satisfaction</p>		en																							
+		Q	A	wellbeing5pt		<p>Rate your agreement (1=Strongly disagree, 5=Strongly agree):</p>		en		Y																					
+		SQ	0	SQ001		I am satisfied with my overall health		en																							
+		SQ	0	SQ002		I get enough sleep		en																							
+		SQ	0	SQ003		I manage stress effectively		en																							
+		SQ	0	SQ004		I feel energetic most days		en																							
+		SQ	0	SQ005		I maintain work-life balance		en																							
+		Q	C	healthcheck		<p>Have you done any of the following in the past 12 months?</p>		en																							
+		SQ	0	SQ001		General health checkup		en																							
+		SQ	0	SQ002		Visited a dentist		en																							
+		SQ	0	SQ003		Eye exam		en																							
+		SQ	0	SQ004		Blood test		en																							
+		SQ	0	SQ005		Vaccination		en																							
+		Q	E	change12m		<p>Over the past 12 months, has each increased, stayed the same, or decreased?</p>		en																							
+		SQ	0	SQ001		Physical activity level		en																							
+		SQ	0	SQ002		Stress level		en																							
+		SQ	0	SQ003		Overall happiness		en																							
+		SQ	0	SQ004		Quality of diet		en																							
+		Q	1	impsat		<p>Rate IMPORTANCE and SATISFACTION for each:</p>		en																							
+		SQ	0	SQ001		Physical fitness		en																							
+		SQ	0	SQ002		Mental health		en																							
+		SQ	0	SQ003		Sleep quality		en																							
+		SQ	0	SQ004		Nutrition		en																							
+		A	0	A1		Not important		en																							
+		A	0	A2		Slightly		en																							
+		A	0	A3		Moderately		en																							
+		A	0	A4		Very important		en																							
+		A	1	A1		Very dissatisfied		en																							
+		A	1	A2		Dissatisfied		en																							
+		A	1	A3		Satisfied		en																							
+		A	1	A4		Very satisfied		en																							
+		Q	R	healthpriorities		<p>Rank your health goals in order of priority:</p>		en																		5					
+		SQ	0	SQ001		Lose weight		en																							
+		SQ	0	SQ002		Build strength		en																							
+		SQ	0	SQ003		Improve sleep		en																							
+		SQ	0	SQ004		Reduce stress		en																							
+		SQ	0	SQ005		Eat healthier		en																							
+		SQ	0	SQ006		Quit smoking/reduce alcohol		en																							
+		SQ	0	SQ007		Improve mental health		en																							
+		G		advanced		<p>Section 5: Additional Details</p>		en																							
+		Q	M	chronic		<p>Have you been diagnosed with any chronic conditions?</p>		en																NONE							
+		SQ	0	SQ001		Diabetes		en																							
+		SQ	0	SQ002		Hypertension		en																							
+		SQ	0	SQ003		Heart disease		en																							
+		SQ	0	SQ004		Asthma		en																							
+		SQ	0	SQ005		Arthritis		en																							
+		SQ	0	NONE		None of the above		en																							
+		Q	F	conditionmgmt	chronic_SQ001=='Y'||chronic_SQ002=='Y'||chronic_SQ003=='Y'||chronic_SQ004=='Y'||chronic_SQ005=='Y'	<p>How well is each condition managed?</p>		en							chronic																
+		SQ	0	SQ001		Diabetes		en																							
+		SQ	0	SQ002		Hypertension		en																							
+		SQ	0	SQ003		Heart disease		en																							
+		SQ	0	SQ004		Asthma		en																							
+		SQ	0	SQ005		Arthritis		en																							
+		A	0	A1		Well managed		en																							
+		A	0	A2		Somewhat		en																							
+		A	0	A3		Poorly		en																							
+		A	0	A4		Not at all		en																							
+		Q	Q	contact		<p>Please provide contact details:</p>		en													regexMatch('/^.{2,}$/', this)	At least 2 characters required									
+		SQ	0	SQ001		First name		en																							
+		SQ	0	SQ002		Last name		en																							
+		SQ	0	SQ003		City		en																							
+		Q	O	healthsource		<p>What is your primary source of health information?</p>		en																							
+		A	0	A1		Doctor		en																							
+		A	0	A2		Internet		en																							
+		A	0	A3		Social media		en																							
+		A	0	A4		Friends/family		en																							
+		A	0	A5		Books/journals		en																							
+		A	0	A6		TV/radio		en																							
+		Q	|	medicaldoc		<p>Upload a recent medical report (optional):</p>		en																							
+		G		closing		<p>Section 6: Final Questions</p>		en																							
+		Q	T	suggestions		<p>Any suggestions for improving health services?</p>		en																				2000			
+		Q	U	comments		<p>Additional comments or feedback:</p>		en																							
+		Q	K	timealloc		<p>Hours per week on each activity (must total 168):</p>		en											(self.NAOK == 168)	Total must equal 168 hours											
+		SQ	0	SQ001		Sleep		en																							
+		SQ	0	SQ002		Work/study		en																							
+		SQ	0	SQ003		Exercise		en																							
+		SQ	0	SQ004		Leisure		en																							
+		SQ	0	SQ005		Other		en																							
+		Q	Y	consent		<p>Would you be willing to be contacted for a follow-up?</p>		en		Y																					
+		Q	X	closingmsg		<p>Thank you{if(gender=='M',' Mr.',if(gender=='F',' Ms.',''))} for completing this survey.</p><p>{if(consent=='Y','We will contact you at '+email.NAOK+' for follow-up.','No follow-up will be conducted.')}</p>		en																							
+		G		demographics		<p>Sección 1: Datos demográficos</p>		es																							
+		Q	L	gender		<p>¿Cuál es su género?</p>		es																							
+		A	0	M		Masculino		es																							
+		A	0	F		Femenino		es																							
+		A	0	O		Otro		es																							
+		Q	N	age		<p>¿Cuál es su edad (en años)?</p>		es																							
+		Q	D	dob		<p>¿Cuál es su fecha de nacimiento?</p>		es																							
+		Q	!	education		<p>¿Cuál es su nivel más alto de educación?</p>		es																							
+		A	0	A1		Sin educación formal		es																							
+		A	0	A2		Escuela primaria		es																							
+		A	0	A3		Escuela secundaria		es																							
+		A	0	A4		Título universitario		es																							
+		A	0	A5		Posgrado		es																							
+		Q	S	country		<p>¿En qué país reside actualmente?</p>		es																							
+		Q	S	email		<p>¿Cuál es su correo electrónico?</p>	<p>Solo para fines de seguimiento</p>	es																							
+		Q	S	phone		<p>¿Cuál es su número de teléfono?</p>	<p>Incluya el código de país</p>	es																							
+		Q	N	hhsize		<p>¿Cuántas personas viven en su hogar (incluyéndose)?</p>		es																							
+		Q	X	infohealth		<p>Las siguientes preguntas se refieren a sus comportamientos de salud. Por favor responda con sinceridad.</p>		es																							
+		G		healthbehaviors		<p>Sección 2: Comportamientos de salud</p>		es																							
+		Q	L	smoking		<p>¿Fuma tabaco actualmente?</p>		es			Y																				
+		A	0	A1		Sí, diariamente		es																							
+		A	0	A2		Sí, ocasionalmente		es																							
+		A	0	A3		Lo dejé		es																							
+		A	0	A4		No, nunca fumé		es																							
+		Q	N	cigsperday		<p>¿Cuántos cigarrillos fuma por día?</p>		es																							
+		Q	N	yearssmoking		<p>¿Cuántos años ha fumado (o fumó)?</p>		es																							
+		Q	N	quityear		<p>¿En qué año dejó de fumar?</p>		es																							
+		Q	Y	alcohol		<p>¿Consume bebidas alcohólicas?</p>		es																							
+		Q	L	alcoholfreq		<p>¿Con qué frecuencia consume alcohol?</p>		es																							
+		A	0	A1		Diariamente		es																							
+		A	0	A2		Varias veces por semana		es																							
+		A	0	A3		Una vez por semana		es																							
+		A	0	A4		Algunas veces al mes		es																							
+		A	0	A5		Raramente		es																							
+		Q	N	drinkssession		<p>¿Cuántas bebidas estándar por sesión?</p>	<p>1 bebida estándar = 1 cerveza (330ml) / 1 copa de vino (150ml) / 1 trago de licor</p>	es																							
+		Q	M	exercise		<p>¿Qué actividades físicas realiza regularmente? (seleccione todas las que apliquen)</p>		es			Y																				
+		SQ	0	SQ001		Caminata / senderismo		es																							
+		SQ	0	SQ002		Correr / trotar		es																							
+		SQ	0	SQ003		Natación		es																							
+		SQ	0	SQ004		Ciclismo		es																							
+		SQ	0	SQ005		Deportes de equipo		es																							
+		SQ	0	SQ006		Gimnasio / pesas		es																							
+		SQ	0	SQ007		Yoga / Pilates		es																							
+		SQ	0	NONE		Ninguno - no hago ejercicio		es																							
+		Q	L	exercisefreq		<p>¿Cuántas veces por semana hace ejercicio?</p>		es																							
+		A	0	A1		Una vez		es																							
+		A	0	A2		2-3 veces		es																							
+		A	0	A3		4-5 veces		es																							
+		A	0	A4		Diariamente		es																							
+		Q	K	bodymeasures		<p>Por favor ingrese su estatura y peso:</p>		es																							
+		SQ	0	height		Estatura (cm)		es																							
+		SQ	0	weight		Peso (kg)		es																							
+		Q	*	bmi		<p>{bodymeasures_weight.NAOK / ((bodymeasures_height.NAOK/100) * (bodymeasures_height.NAOK/100))}</p>		es																							
+		Q	X	bmidisplay		<p>Su IMC: <strong>{round(bmi,1)}</strong></p><p>{if(bmi<18.5,'Bajo peso',if(bmi<25,'Normal',if(bmi<30,'Sobrepeso','Obesidad')))}</p>		es																							
+		G		nutrition		<p>Sección 3: Nutrición y alimentación</p>		es																							
+		Q	F	dietfreq		<p>¿Con qué frecuencia consume los siguientes alimentos?</p>	<p>Seleccione una opción por fila</p>	es																							
+		SQ	0	SQ001		Frutas frescas		es																							
+		SQ	0	SQ002		Verduras frescas		es																							
+		SQ	0	SQ003		Cereales integrales		es																							
+		SQ	0	SQ004		Carne roja		es																							
+		SQ	0	SQ005		Comida rápida		es																							
+		SQ	0	SQ006		Bebidas azucaradas		es																							
+		SQ	0	SQ007		Productos lácteos		es																							
+		A	0	A1		Diariamente		es																							
+		A	0	A2		Varias veces/semana		es																							
+		A	0	A3		Una vez por semana		es																							
+		A	0	A4		Algunas veces/mes		es																							
+		A	0	A5		Raramente/Nunca		es																							
+		Q	N	waterglasses		<p>¿Cuántos vasos de agua bebe por día?</p>		es																							
+		Q	5	mealsregular		<p>¿Qué tan regularmente come tres comidas principales al día? (1=Nunca, 5=Siempre)</p>		es																							
+		Q	P	allergies		<p>¿Tiene alergias o intolerancias alimentarias? (seleccione y agregue detalles)</p>		es			Y																				
+		SQ	0	SQ001		Gluten		es																							
+		SQ	0	SQ002		Lactosa/Lácteos		es																							
+		SQ	0	SQ003		Frutos secos		es																							
+		SQ	0	SQ004		Mariscos		es																							
+		SQ	0	SQ005		Ninguna		es																							
+		Q	K	mealpct		<p>¿Qué porcentaje de comidas proviene de cada fuente?</p>	<p>Debe sumar 100%</p>	es																							
+		SQ	0	SQ001		Hecho en casa		es																							
+		SQ	0	SQ002		Restaurante		es																							
+		SQ	0	SQ003		Comida para llevar/delivery		es																							
+		SQ	0	SQ004		Comedor		es																							
+		G		wellbeing		<p>Sección 4: Bienestar y satisfacción</p>		es																							
+		Q	A	wellbeing5pt		<p>Califique su acuerdo (1=Totalmente en desacuerdo, 5=Totalmente de acuerdo):</p>		es																							
+		SQ	0	SQ001		Estoy satisfecho/a con mi salud general		es																							
+		SQ	0	SQ002		Duermo lo suficiente		es																							
+		SQ	0	SQ003		Manejo el estrés eficazmente		es																							
+		SQ	0	SQ004		Me siento con energía la mayoría de los días		es																							
+		SQ	0	SQ005		Mantengo un equilibrio entre trabajo y vida personal		es																							
+		Q	C	healthcheck		<p>¿Ha realizado alguno de los siguientes en los últimos 12 meses?</p>		es																							
+		SQ	0	SQ001		Chequeo médico general		es																							
+		SQ	0	SQ002		Visita al dentista		es																							
+		SQ	0	SQ003		Examen de la vista		es																							
+		SQ	0	SQ004		Análisis de sangre		es																							
+		SQ	0	SQ005		Vacunación		es																							
+		Q	E	change12m		<p>En los últimos 12 meses, ¿cada elemento ha aumentado, se ha mantenido o ha disminuido?</p>		es																							
+		SQ	0	SQ001		Nivel de actividad física		es																							
+		SQ	0	SQ002		Nivel de estrés		es																							
+		SQ	0	SQ003		Felicidad general		es																							
+		SQ	0	SQ004		Calidad de la dieta		es																							
+		Q	1	impsat		<p>Califique la IMPORTANCIA y la SATISFACCIÓN de cada elemento:</p>		es																							
+		SQ	0	SQ001		Condición física		es																							
+		SQ	0	SQ002		Salud mental		es																							
+		SQ	0	SQ003		Calidad del sueño		es																							
+		SQ	0	SQ004		Nutrición		es																							
+		A	0	A1		No importante		es																							
+		A	0	A2		Ligeramente		es																							
+		A	0	A3		Moderadamente		es																							
+		A	0	A4		Muy importante		es																							
+		A	1	A1		Muy insatisfecho/a		es																							
+		A	1	A2		Insatisfecho/a		es																							
+		A	1	A3		Satisfecho/a		es																							
+		A	1	A4		Muy satisfecho/a		es																							
+		Q	R	healthpriorities		<p>Clasifique sus objetivos de salud en orden de prioridad:</p>		es																							
+		SQ	0	SQ001		Perder peso		es																							
+		SQ	0	SQ002		Ganar fuerza		es																							
+		SQ	0	SQ003		Mejorar el sueño		es																							
+		SQ	0	SQ004		Reducir el estrés		es																							
+		SQ	0	SQ005		Comer más saludable		es																							
+		SQ	0	SQ006		Dejar de fumar / reducir alcohol		es																							
+		SQ	0	SQ007		Mejorar la salud mental		es																							
+		G		advanced		<p>Sección 5: Detalles adicionales</p>		es																							
+		Q	M	chronic		<p>¿Le han diagnosticado alguna enfermedad crónica?</p>		es																							
+		SQ	0	SQ001		Diabetes		es																							
+		SQ	0	SQ002		Hipertensión		es																							
+		SQ	0	SQ003		Enfermedad cardíaca		es																							
+		SQ	0	SQ004		Asma		es																							
+		SQ	0	SQ005		Artritis		es																							
+		SQ	0	NONE		Ninguna de las anteriores		es																							
+		Q	F	conditionmgmt		<p>¿Qué tan bien se maneja cada condición?</p>		es																							
+		SQ	0	SQ001		Diabetes		es																							
+		SQ	0	SQ002		Hipertensión		es																							
+		SQ	0	SQ003		Enfermedad cardíaca		es																							
+		SQ	0	SQ004		Asma		es																							
+		SQ	0	SQ005		Artritis		es																							
+		A	0	A1		Bien manejada		es																							
+		A	0	A2		Parcialmente		es																							
+		A	0	A3		Mal manejada		es																							
+		A	0	A4		Para nada		es																							
+		Q	Q	contact		<p>Por favor proporcione sus datos de contacto:</p>		es																							
+		SQ	0	SQ001		Nombre		es																							
+		SQ	0	SQ002		Apellido		es																							
+		SQ	0	SQ003		Ciudad		es																							
+		Q	O	healthsource		<p>¿Cuál es su principal fuente de información sobre salud?</p>		es																							
+		A	0	A1		Médico		es																							
+		A	0	A2		Internet		es																							
+		A	0	A3		Redes sociales		es																							
+		A	0	A4		Amigos/familia		es																							
+		A	0	A5		Libros/revistas		es																							
+		A	0	A6		TV/radio		es																							
+		Q	|	medicaldoc		<p>Suba un informe médico reciente (opcional):</p>		es																							
+		G		closing		<p>Sección 6: Preguntas finales</p>		es																							
+		Q	T	suggestions		<p>¿Alguna sugerencia para mejorar los servicios de salud?</p>		es																							
+		Q	U	comments		<p>Comentarios o retroalimentación adicional:</p>		es																							
+		Q	K	timealloc		<p>Horas por semana en cada actividad (deben sumar 168):</p>		es																							
+		SQ	0	SQ001		Sueño		es																							
+		SQ	0	SQ002		Trabajo/estudio		es																							
+		SQ	0	SQ003		Ejercicio		es																							
+		SQ	0	SQ004		Ocio		es																							
+		SQ	0	SQ005		Otro		es																							
+		Q	Y	consent		<p>¿Estaría dispuesto/a a ser contactado/a para un seguimiento?</p>		es																							
+		Q	X	closingmsg		<p>Thank you{if(gender=='M',' Mr.',if(gender=='F',' Ms.',''))} for completing this survey.</p><p>{if(consent=='Y','We will contact you at '+email.NAOK+' for follow-up.','No follow-up will be conducted.')}</p>		es																							
+		G		demographics		<p>Section 1 : Données démographiques</p>		fr																							
+		Q	L	gender		<p>Quel est votre genre ?</p>		fr																							
+		A	0	M		Homme		fr																							
+		A	0	F		Femme		fr																							
+		A	0	O		Autre		fr																							
+		Q	N	age		<p>Quel est votre âge (en années) ?</p>		fr																							
+		Q	D	dob		<p>Quelle est votre date de naissance ?</p>		fr																							
+		Q	!	education		<p>Quel est votre plus haut niveau d'éducation ?</p>		fr																							
+		A	0	A1		Pas d'éducation formelle		fr																							
+		A	0	A2		École primaire		fr																							
+		A	0	A3		École secondaire		fr																							
+		A	0	A4		Diplôme universitaire		fr																							
+		A	0	A5		Diplôme de troisième cycle		fr																							
+		Q	S	country		<p>Dans quel pays résidez-vous actuellement ?</p>		fr																							
+		Q	S	email		<p>Quelle est votre adresse e-mail ?</p>	<p>À des fins de suivi uniquement</p>	fr																							
+		Q	S	phone		<p>Quel est votre numéro de téléphone ?</p>	<p>Incluez l'indicatif du pays</p>	fr																							
+		Q	N	hhsize		<p>Combien de personnes vivent dans votre ménage (vous compris) ?</p>		fr																							
+		Q	X	infohealth		<p>Les questions suivantes portent sur vos comportements de santé. Veuillez répondre honnêtement.</p>		fr																							
+		G		healthbehaviors		<p>Section 2 : Comportements de santé</p>		fr																							
+		Q	L	smoking		<p>Fumez-vous actuellement du tabac ?</p>		fr			Y																				
+		A	0	A1		Oui, quotidiennement		fr																							
+		A	0	A2		Oui, occasionnellement		fr																							
+		A	0	A3		J'ai arrêté		fr																							
+		A	0	A4		Non, jamais fumé		fr																							
+		Q	N	cigsperday		<p>Combien de cigarettes fumez-vous par jour ?</p>		fr																							
+		Q	N	yearssmoking		<p>Depuis combien d'années fumez-vous (ou avez-vous fumé) ?</p>		fr																							
+		Q	N	quityear		<p>En quelle année avez-vous arrêté de fumer ?</p>		fr																							
+		Q	Y	alcohol		<p>Consommez-vous des boissons alcoolisées ?</p>		fr																							
+		Q	L	alcoholfreq		<p>À quelle fréquence consommez-vous de l'alcool ?</p>		fr																							
+		A	0	A1		Quotidiennement		fr																							
+		A	0	A2		Plusieurs fois par semaine		fr																							
+		A	0	A3		Une fois par semaine		fr																							
+		A	0	A4		Quelques fois par mois		fr																							
+		A	0	A5		Rarement		fr																							
+		Q	N	drinkssession		<p>Combien de verres standard par session ?</p>	<p>1 verre standard = 1 bière (330ml) / 1 verre de vin (150ml) / 1 shot de spiritueux</p>	fr																							
+		Q	M	exercise		<p>Quelles activités physiques pratiquez-vous régulièrement ? (sélectionnez toutes les réponses)</p>		fr			Y																				
+		SQ	0	SQ001		Marche / randonnée		fr																							
+		SQ	0	SQ002		Course à pied / jogging		fr																							
+		SQ	0	SQ003		Natation		fr																							
+		SQ	0	SQ004		Cyclisme		fr																							
+		SQ	0	SQ005		Sports collectifs		fr																							
+		SQ	0	SQ006		Salle de sport / musculation		fr																							
+		SQ	0	SQ007		Yoga / Pilates		fr																							
+		SQ	0	NONE		Aucun - je ne fais pas d'exercice		fr																							
+		Q	L	exercisefreq		<p>Combien de fois par semaine faites-vous de l'exercice ?</p>		fr																							
+		A	0	A1		Une fois		fr																							
+		A	0	A2		2-3 fois		fr																							
+		A	0	A3		4-5 fois		fr																							
+		A	0	A4		Quotidiennement		fr																							
+		Q	K	bodymeasures		<p>Veuillez entrer votre taille et votre poids :</p>		fr																							
+		SQ	0	height		Taille (cm)		fr																							
+		SQ	0	weight		Poids (kg)		fr																							
+		Q	*	bmi		<p>{bodymeasures_weight.NAOK / ((bodymeasures_height.NAOK/100) * (bodymeasures_height.NAOK/100))}</p>		fr																							
+		Q	X	bmidisplay		<p>Votre IMC : <strong>{round(bmi,1)}</strong></p><p>{if(bmi<18.5,'Insuffisance pondérale',if(bmi<25,'Normal',if(bmi<30,'Surpoids','Obésité')))}</p>		fr																							
+		G		nutrition		<p>Section 3 : Nutrition et alimentation</p>		fr																							
+		Q	F	dietfreq		<p>À quelle fréquence consommez-vous les aliments suivants ?</p>	<p>Sélectionnez une option par ligne</p>	fr																							
+		SQ	0	SQ001		Fruits frais		fr																							
+		SQ	0	SQ002		Légumes frais		fr																							
+		SQ	0	SQ003		Céréales complètes		fr																							
+		SQ	0	SQ004		Viande rouge		fr																							
+		SQ	0	SQ005		Fast-food		fr																							
+		SQ	0	SQ006		Boissons sucrées		fr																							
+		SQ	0	SQ007		Produits laitiers		fr																							
+		A	0	A1		Quotidiennement		fr																							
+		A	0	A2		Plusieurs fois/semaine		fr																							
+		A	0	A3		Une fois par semaine		fr																							
+		A	0	A4		Quelques fois/mois		fr																							
+		A	0	A5		Rarement/Jamais		fr																							
+		Q	N	waterglasses		<p>Combien de verres d'eau buvez-vous par jour ?</p>		fr																							
+		Q	5	mealsregular		<p>À quelle régularité prenez-vous trois repas principaux par jour ? (1=Jamais, 5=Toujours)</p>		fr																							
+		Q	P	allergies		<p>Avez-vous des allergies ou intolérances alimentaires ? (sélectionnez et ajoutez des détails)</p>		fr			Y																				
+		SQ	0	SQ001		Gluten		fr																							
+		SQ	0	SQ002		Lactose/Produits laitiers		fr																							
+		SQ	0	SQ003		Noix		fr																							
+		SQ	0	SQ004		Fruits de mer		fr																							
+		SQ	0	SQ005		Aucune		fr																							
+		Q	K	mealpct		<p>Quel pourcentage de repas provient de chaque source ?</p>	<p>Le total doit être de 100%</p>	fr																							
+		SQ	0	SQ001		Fait maison		fr																							
+		SQ	0	SQ002		Restaurant		fr																							
+		SQ	0	SQ003		Plats à emporter/livraison		fr																							
+		SQ	0	SQ004		Cantine		fr																							
+		G		wellbeing		<p>Section 4 : Bien-être et satisfaction</p>		fr																							
+		Q	A	wellbeing5pt		<p>Évaluez votre accord (1=Pas du tout d'accord, 5=Tout à fait d'accord) :</p>		fr																							
+		SQ	0	SQ001		Je suis satisfait(e) de ma santé globale		fr																							
+		SQ	0	SQ002		Je dors suffisamment		fr																							
+		SQ	0	SQ003		Je gère efficacement le stress		fr																							
+		SQ	0	SQ004		J'ai de l'énergie la plupart des jours		fr																							
+		SQ	0	SQ005		Je maintiens un équilibre travail-vie personnelle		fr																							
+		Q	C	healthcheck		<p>Avez-vous fait les examens suivants au cours des 12 derniers mois ?</p>		fr																							
+		SQ	0	SQ001		Bilan de santé général		fr																							
+		SQ	0	SQ002		Visite chez le dentiste		fr																							
+		SQ	0	SQ003		Examen des yeux		fr																							
+		SQ	0	SQ004		Analyse de sang		fr																							
+		SQ	0	SQ005		Vaccination		fr																							
+		Q	E	change12m		<p>Au cours des 12 derniers mois, chaque élément a-t-il augmenté, est resté stable ou diminué ?</p>		fr																							
+		SQ	0	SQ001		Niveau d'activité physique		fr																							
+		SQ	0	SQ002		Niveau de stress		fr																							
+		SQ	0	SQ003		Bonheur général		fr																							
+		SQ	0	SQ004		Qualité de l'alimentation		fr																							
+		Q	1	impsat		<p>Évaluez l'IMPORTANCE et la SATISFACTION pour chaque élément :</p>		fr																							
+		SQ	0	SQ001		Forme physique		fr																							
+		SQ	0	SQ002		Santé mentale		fr																							
+		SQ	0	SQ003		Qualité du sommeil		fr																							
+		SQ	0	SQ004		Nutrition		fr																							
+		A	0	A1		Pas important		fr																							
+		A	0	A2		Légèrement		fr																							
+		A	0	A3		Modérément		fr																							
+		A	0	A4		Très important		fr																							
+		A	1	A1		Très insatisfait(e)		fr																							
+		A	1	A2		Insatisfait(e)		fr																							
+		A	1	A3		Satisfait(e)		fr																							
+		A	1	A4		Très satisfait(e)		fr																							
+		Q	R	healthpriorities		<p>Classez vos objectifs de santé par ordre de priorité :</p>		fr																							
+		SQ	0	SQ001		Perdre du poids		fr																							
+		SQ	0	SQ002		Développer la force		fr																							
+		SQ	0	SQ003		Améliorer le sommeil		fr																							
+		SQ	0	SQ004		Réduire le stress		fr																							
+		SQ	0	SQ005		Manger plus sainement		fr																							
+		SQ	0	SQ006		Arrêter de fumer / réduire l'alcool		fr																							
+		SQ	0	SQ007		Améliorer la santé mentale		fr																							
+		G		advanced		<p>Section 5 : Détails supplémentaires</p>		fr																							
+		Q	M	chronic		<p>Avez-vous reçu un diagnostic de maladies chroniques ?</p>		fr																							
+		SQ	0	SQ001		Diabète		fr																							
+		SQ	0	SQ002		Hypertension		fr																							
+		SQ	0	SQ003		Maladie cardiaque		fr																							
+		SQ	0	SQ004		Asthme		fr																							
+		SQ	0	SQ005		Arthrite		fr																							
+		SQ	0	NONE		Aucune des réponses ci-dessus		fr																							
+		Q	F	conditionmgmt		<p>Dans quelle mesure chaque condition est-elle gérée ?</p>		fr																							
+		SQ	0	SQ001		Diabète		fr																							
+		SQ	0	SQ002		Hypertension		fr																							
+		SQ	0	SQ003		Maladie cardiaque		fr																							
+		SQ	0	SQ004		Asthme		fr																							
+		SQ	0	SQ005		Arthrite		fr																							
+		A	0	A1		Bien géré		fr																							
+		A	0	A2		Partiellement		fr																							
+		A	0	A3		Mal géré		fr																							
+		A	0	A4		Pas du tout		fr																							
+		Q	Q	contact		<p>Veuillez fournir vos coordonnées :</p>		fr																							
+		SQ	0	SQ001		Prénom		fr																							
+		SQ	0	SQ002		Nom de famille		fr																							
+		SQ	0	SQ003		Ville		fr																							
+		Q	O	healthsource		<p>Quelle est votre principale source d'information sur la santé ?</p>		fr																							
+		A	0	A1		Médecin		fr																							
+		A	0	A2		Internet		fr																							
+		A	0	A3		Réseaux sociaux		fr																							
+		A	0	A4		Amis/famille		fr																							
+		A	0	A5		Livres/revues		fr																							
+		A	0	A6		TV/radio		fr																							
+		Q	|	medicaldoc		<p>Téléchargez un rapport médical récent (optionnel) :</p>		fr																							
+		G		closing		<p>Section 6 : Questions finales</p>		fr																							
+		Q	T	suggestions		<p>Des suggestions pour améliorer les services de santé ?</p>		fr																							
+		Q	U	comments		<p>Commentaires ou retours supplémentaires :</p>		fr																							
+		Q	K	timealloc		<p>Heures par semaine pour chaque activité (le total doit être de 168) :</p>		fr																							
+		SQ	0	SQ001		Sommeil		fr																							
+		SQ	0	SQ002		Travail/études		fr																							
+		SQ	0	SQ003		Exercice		fr																							
+		SQ	0	SQ004		Loisirs		fr																							
+		SQ	0	SQ005		Autre		fr																							
+		Q	Y	consent		<p>Seriez-vous disposé(e) à être contacté(e) pour un suivi ?</p>		fr																							
+		Q	X	closingmsg		<p>Thank you{if(gender=='M',' Mr.',if(gender=='F',' Ms.',''))} for completing this survey.</p><p>{if(consent=='Y','We will contact you at '+email.NAOK+' for follow-up.','No follow-up will be conducted.')}</p>		fr																							
+		G		demographics		<p>Secțiunea 1: Date demografice</p>		ro																							
+		Q	L	gender		<p>Care este sexul dumneavoastră?</p>		ro																							
+		A	0	M		Bărbat		ro																							
+		A	0	F		Femeie		ro																							
+		A	0	O		Altul		ro																							
+		Q	N	age		<p>Care este vârsta dumneavoastră (în ani)?</p>		ro																							
+		Q	D	dob		<p>Care este data dumneavoastră de naștere?</p>		ro																							
+		Q	!	education		<p>Care este cel mai înalt nivel de educație absolvit?</p>		ro																							
+		A	0	A1		Fără educație formală		ro																							
+		A	0	A2		Școală primară		ro																							
+		A	0	A3		Școală secundară		ro																							
+		A	0	A4		Diplomă universitară		ro																							
+		A	0	A5		Studii postuniversitare		ro																							
+		Q	S	country		<p>În ce țară locuiți în prezent?</p>		ro																							
+		Q	S	email		<p>Care este adresa dumneavoastră de e-mail?</p>	<p>Doar pentru scopuri de urmărire</p>	ro																							
+		Q	S	phone		<p>Care este numărul dumneavoastră de telefon?</p>	<p>Includeți codul de țară</p>	ro																							
+		Q	N	hhsize		<p>Câte persoane locuiesc în gospodăria dumneavoastră (inclusiv dumneavoastră)?</p>		ro																							
+		Q	X	infohealth		<p>Următoarele întrebări se referă la comportamentele dumneavoastră legate de sănătate. Vă rugăm să răspundeți sincer.</p>		ro																							
+		G		healthbehaviors		<p>Secțiunea 2: Comportamente legate de sănătate</p>		ro																							
+		Q	L	smoking		<p>Fumați în prezent tutun?</p>		ro			Y																				
+		A	0	A1		Da, zilnic		ro																							
+		A	0	A2		Da, ocazional		ro																							
+		A	0	A3		Am renunțat		ro																							
+		A	0	A4		Nu, nu am fumat niciodată		ro																							
+		Q	N	cigsperday		<p>Câte țigări fumați pe zi?</p>		ro																							
+		Q	N	yearssmoking		<p>De câți ani fumați (sau ați fumat)?</p>		ro																							
+		Q	N	quityear		<p>În ce an ați renunțat la fumat?</p>		ro																							
+		Q	Y	alcohol		<p>Consumați băuturi alcoolice?</p>		ro																							
+		Q	L	alcoholfreq		<p>Cât de des consumați alcool?</p>		ro																							
+		A	0	A1		Zilnic		ro																							
+		A	0	A2		De câteva ori pe săptămână		ro																							
+		A	0	A3		O dată pe săptămână		ro																							
+		A	0	A4		De câteva ori pe lună		ro																							
+		A	0	A5		Rar		ro																							
+		Q	N	drinkssession		<p>Câte băuturi standard pe sesiune?</p>	<p>1 băutură standard = 1 bere (330ml) / 1 pahar vin (150ml) / 1 shot băuturi spirtoase</p>	ro																							
+		Q	M	exercise		<p>Ce activități fizice practicați regulat? (selectați toate variantele aplicabile)</p>		ro			Y																				
+		SQ	0	SQ001		Mers pe jos / drumeții		ro																							
+		SQ	0	SQ002		Alergare / jogging		ro																							
+		SQ	0	SQ003		Înot		ro																							
+		SQ	0	SQ004		Ciclism		ro																							
+		SQ	0	SQ005		Sporturi de echipă		ro																							
+		SQ	0	SQ006		Sală de fitness / antrenament cu greutăți		ro																							
+		SQ	0	SQ007		Yoga / Pilates		ro																							
+		SQ	0	NONE		Niciunul - nu fac exerciții fizice		ro																							
+		Q	L	exercisefreq		<p>De câte ori pe săptămână faceți exerciții fizice?</p>		ro																							
+		A	0	A1		O dată		ro																							
+		A	0	A2		De 2-3 ori		ro																							
+		A	0	A3		De 4-5 ori		ro																							
+		A	0	A4		Zilnic		ro																							
+		Q	K	bodymeasures		<p>Vă rugăm să introduceți înălțimea și greutatea:</p>		ro																							
+		SQ	0	height		Înălțime (cm)		ro																							
+		SQ	0	weight		Greutate (kg)		ro																							
+		Q	*	bmi		<p>{bodymeasures_weight.NAOK / ((bodymeasures_height.NAOK/100) * (bodymeasures_height.NAOK/100))}</p>		ro																							
+		Q	X	bmidisplay		<p>IMC-ul dumneavoastră: <strong>{round(bmi,1)}</strong></p><p>{if(bmi<18.5,'Subponderal',if(bmi<25,'Normal',if(bmi<30,'Supraponderal','Obez')))}</p>		ro																							
+		G		nutrition		<p>Secțiunea 3: Nutriție și alimentație</p>		ro																							
+		Q	F	dietfreq		<p>Cât de des consumați următoarele alimente?</p>	<p>Selectați o opțiune pe rând</p>	ro																							
+		SQ	0	SQ001		Fructe proaspete		ro																							
+		SQ	0	SQ002		Legume proaspete		ro																							
+		SQ	0	SQ003		Cereale integrale		ro																							
+		SQ	0	SQ004		Carne roșie		ro																							
+		SQ	0	SQ005		Fast-food		ro																							
+		SQ	0	SQ006		Băuturi cu zahăr		ro																							
+		SQ	0	SQ007		Produse lactate		ro																							
+		A	0	A1		Zilnic		ro																							
+		A	0	A2		De câteva ori/săptămână		ro																							
+		A	0	A3		O dată pe săptămână		ro																							
+		A	0	A4		De câteva ori/lună		ro																							
+		A	0	A5		Rar/Niciodată		ro																							
+		Q	N	waterglasses		<p>Câte pahare de apă beți pe zi?</p>		ro																							
+		Q	5	mealsregular		<p>Cât de regulat consumați trei mese principale pe zi? (1=Niciodată, 5=Întotdeauna)</p>		ro																							
+		Q	P	allergies		<p>Aveți alergii sau intoleranțe alimentare? (selectați și adăugați detalii)</p>		ro			Y																				
+		SQ	0	SQ001		Gluten		ro																							
+		SQ	0	SQ002		Lactoză/Lactate		ro																							
+		SQ	0	SQ003		Nuci		ro																							
+		SQ	0	SQ004		Fructe de mare		ro																							
+		SQ	0	SQ005		Niciuna		ro																							
+		Q	K	mealpct		<p>Ce procent din mese provine din fiecare sursă?</p>	<p>Totalul trebuie să fie 100%</p>	ro																							
+		SQ	0	SQ001		Gătit acasă		ro																							
+		SQ	0	SQ002		Restaurant		ro																							
+		SQ	0	SQ003		La pachet/livrare		ro																							
+		SQ	0	SQ004		Cantină		ro																							
+		G		wellbeing		<p>Secțiunea 4: Bunăstare și satisfacție</p>		ro																							
+		Q	A	wellbeing5pt		<p>Evaluați acordul dumneavoastră (1=Total dezacord, 5=Total acord):</p>		ro																							
+		SQ	0	SQ001		Sunt mulțumit/ă de sănătatea mea generală		ro																							
+		SQ	0	SQ002		Dorm suficient		ro																							
+		SQ	0	SQ003		Gestionez eficient stresul		ro																							
+		SQ	0	SQ004		Mă simt energic/ă în majoritatea zilelor		ro																							
+		SQ	0	SQ005		Mențin un echilibru între muncă și viață personală		ro																							
+		Q	C	healthcheck		<p>Ați efectuat următoarele în ultimele 12 luni?</p>		ro																							
+		SQ	0	SQ001		Control medical general		ro																							
+		SQ	0	SQ002		Vizită la dentist		ro																							
+		SQ	0	SQ003		Examen oftalmologic		ro																							
+		SQ	0	SQ004		Analiză de sânge		ro																							
+		SQ	0	SQ005		Vaccinare		ro																							
+		Q	E	change12m		<p>În ultimele 12 luni, fiecare element a crescut, a rămas la fel sau a scăzut?</p>		ro																							
+		SQ	0	SQ001		Nivelul activității fizice		ro																							
+		SQ	0	SQ002		Nivelul de stres		ro																							
+		SQ	0	SQ003		Fericirea generală		ro																							
+		SQ	0	SQ004		Calitatea alimentației		ro																							
+		Q	1	impsat		<p>Evaluați IMPORTANȚA și SATISFACȚIA pentru fiecare element:</p>		ro																							
+		SQ	0	SQ001		Condiție fizică		ro																							
+		SQ	0	SQ002		Sănătate mintală		ro																							
+		SQ	0	SQ003		Calitatea somnului		ro																							
+		SQ	0	SQ004		Nutriție		ro																							
+		A	0	A1		Neimportant		ro																							
+		A	0	A2		Puțin		ro																							
+		A	0	A3		Moderat		ro																							
+		A	0	A4		Foarte important		ro																							
+		A	1	A1		Foarte nemulțumit/ă		ro																							
+		A	1	A2		Nemulțumit/ă		ro																							
+		A	1	A3		Mulțumit/ă		ro																							
+		A	1	A4		Foarte mulțumit/ă		ro																							
+		Q	R	healthpriorities		<p>Clasificați obiectivele de sănătate în ordinea priorității:</p>		ro																							
+		SQ	0	SQ001		Scădere în greutate		ro																							
+		SQ	0	SQ002		Dezvoltarea forței		ro																							
+		SQ	0	SQ003		Îmbunătățirea somnului		ro																							
+		SQ	0	SQ004		Reducerea stresului		ro																							
+		SQ	0	SQ005		Alimentație mai sănătoasă		ro																							
+		SQ	0	SQ006		Renunțare la fumat / reducerea alcoolului		ro																							
+		SQ	0	SQ007		Îmbunătățirea sănătății mintale		ro																							
+		G		advanced		<p>Secțiunea 5: Detalii suplimentare</p>		ro																							
+		Q	M	chronic		<p>Vi s-a diagnosticat vreo afecțiune cronică?</p>		ro																							
+		SQ	0	SQ001		Diabet		ro																							
+		SQ	0	SQ002		Hipertensiune		ro																							
+		SQ	0	SQ003		Boală cardiacă		ro																							
+		SQ	0	SQ004		Astm		ro																							
+		SQ	0	SQ005		Artrită		ro																							
+		SQ	0	NONE		Niciunul dintre cele de mai sus		ro																							
+		Q	F	conditionmgmt		<p>Cât de bine este gestionată fiecare afecțiune?</p>		ro																							
+		SQ	0	SQ001		Diabet		ro																							
+		SQ	0	SQ002		Hipertensiune		ro																							
+		SQ	0	SQ003		Boală cardiacă		ro																							
+		SQ	0	SQ004		Astm		ro																							
+		SQ	0	SQ005		Artrită		ro																							
+		A	0	A1		Bine gestionată		ro																							
+		A	0	A2		Parțial		ro																							
+		A	0	A3		Slab gestionată		ro																							
+		A	0	A4		Deloc		ro																							
+		Q	Q	contact		<p>Vă rugăm să furnizați datele de contact:</p>		ro																							
+		SQ	0	SQ001		Prenume		ro																							
+		SQ	0	SQ002		Nume de familie		ro																							
+		SQ	0	SQ003		Oraș		ro																							
+		Q	O	healthsource		<p>Care este principala dumneavoastră sursă de informații despre sănătate?</p>		ro																							
+		A	0	A1		Medic		ro																							
+		A	0	A2		Internet		ro																							
+		A	0	A3		Rețele sociale		ro																							
+		A	0	A4		Prieteni/familie		ro																							
+		A	0	A5		Cărți/reviste		ro																							
+		A	0	A6		TV/radio		ro																							
+		Q	|	medicaldoc		<p>Încărcați un raport medical recent (opțional):</p>		ro																							
+		G		closing		<p>Secțiunea 6: Întrebări finale</p>		ro																							
+		Q	T	suggestions		<p>Sugestii pentru îmbunătățirea serviciilor de sănătate?</p>		ro																							
+		Q	U	comments		<p>Comentarii sau observații suplimentare:</p>		ro																							
+		Q	K	timealloc		<p>Ore pe săptămână pentru fiecare activitate (totalul trebuie să fie 168):</p>		ro																							
+		SQ	0	SQ001		Somn		ro																							
+		SQ	0	SQ002		Muncă/studii		ro																							
+		SQ	0	SQ003		Exerciții fizice		ro																							
+		SQ	0	SQ004		Timp liber		ro																							
+		SQ	0	SQ005		Altele		ro																							
+		Q	Y	consent		<p>Ați fi dispus/ă să fiți contactat/ă pentru urmărire?</p>		ro																							
+		Q	X	closingmsg		<p>Thank you{if(gender=='M',' Mr.',if(gender=='F',' Ms.',''))} for completing this survey.</p><p>{if(consent=='Y','We will contact you at '+email.NAOK+' for follow-up.','No follow-up will be conducted.')}</p>		ro																							
