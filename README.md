@@ -18,6 +18,12 @@ An Excel template + R conversion script that lets you author LimeSurvey surveys 
 
 ## Quick Start
 
+### Option 1: Use the Web App (no installation needed)
+
+Go to **[shiny.os.md/limesurvey-excel-builder](https://shiny.os.md/limesurvey-excel-builder/)**, upload your `.xlsx` file, and download the converted `.txt` file ready for LimeSurvey import.
+
+### Option 2: Run the R Script Locally
+
 1. Open `limesurvey_survey_builder.xlsx` in Excel
 2. Edit the **Survey Design** sheet — add your questions, answers, and settings
 3. Run `xlsx_to_limesurvey_tsv.R` in RStudio. The script will generate a *.txt file
