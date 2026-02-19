@@ -1,0 +1,20 @@
+# R output
+*.txt
+!README.md
+!LICENSE
+
+# R workspace
+.Rhistory
+.Rdata
+.RData
+.Ruserdata
+.Rproj.user/
+
+# OS files
+.DS_Store
+Thumbs.db
+~$*
+
+# Temporary files
+*.tmp
+*.bak
