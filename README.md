@@ -8,7 +8,7 @@ An Excel template + R conversion script that lets you author LimeSurvey surveys 
 
 **Why use this instead of the LimeSurvey UI?**
 
-- **Format text directly in Excel** — bold, italic, underline, and color any word or phrase in Excel; the R script preserves the exact formatting in the questionnaire, including partial formatting within a cell
+- **Format text directly in Excel** — bold, italic, underline, and color any word or phrase in Excel; the exact formatting will be preserved in the questionnaire, including partial formatting within a cell
 - **Faster authoring** — type questions, answers, and logic in a familiar spreadsheet environment
 - **Easy translations** — add language columns (`text_fr`, `text_es`, `text_ro`, ...) instead of duplicating rows
 - **Version control** — track changes with Git, collaborate with colleagues on survey design
