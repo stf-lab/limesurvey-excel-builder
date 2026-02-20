@@ -5,6 +5,7 @@
 
 # Shiny app (deployed separately)
 shiny/
+backup/
 
 # R workspace
 .Rhistory
