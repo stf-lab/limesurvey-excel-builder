@@ -173,8 +173,3 @@ Contributions are welcome! Feel free to open issues or submit pull requests for:
 - New language translations for the example survey
 - Bug fixes or improvements to the R script
 - Documentation improvements
-
-## Acknowledgments
-
-- [LimeSurvey](https://www.limesurvey.org/) — the open-source survey platform this tool is built for
-- Built with assistance from [Claude](https://claude.ai) by Anthropic
