@@ -1,3 +1,6 @@
+# Title: Excel file to LimeSurvey TSV Builder
+# Author: Stefan Savin
+# Date: 2026-02-22
 ## ==============================================================================
 ## xlsx_to_limesurvey_tsv.R
 ## Convert LimeSurvey Survey Builder Excel file to LimeSurvey TSV import format
