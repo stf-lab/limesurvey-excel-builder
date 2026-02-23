@@ -43,7 +43,7 @@ library(xml2)
 # STEP 1: Read plain text data
 # ==============================================================================
 cat("Reading data:", input_file, "\n")
-df <- read_excel(input_file, sheet = "Survey Design", col_types = "text")
+df <- read_excel(input_file, sheet = "Survey Design", col_types = "text", .name_repair = "minimal")
 df <- df[rowSums(!is.na(df) & df != "") > 0, ]
 if (nrow(df) == 0) stop("No data found in 'Survey Design' sheet.")
 
@@ -53,8 +53,8 @@ cat(sprintf("  Found %d data rows, %d columns\n", nrow(df), ncol(df)))
 # ==============================================================================
 # STEP 2: Detect language columns
 # ==============================================================================
-text_cols <- grep("^text_[a-z]{2}(-[a-z]{2,})?$", col_names_vec, value = TRUE)
-help_cols <- grep("^help_[a-z]{2}(-[a-z]{2,})?$", col_names_vec, value = TRUE)
+text_cols <- grep("^text_[a-zA-Z]{2}(-[a-zA-Z]{2,})?$", col_names_vec, value = TRUE)
+help_cols <- grep("^help_[a-zA-Z]{2}(-[a-zA-Z]{2,})?$", col_names_vec, value = TRUE)
 
 text_langs <- sub("^text_", "", text_cols)
 help_langs <- sub("^help_", "", help_cols)
