@@ -1,4 +1,5 @@
 # LimeSurvey Excel Builder
+
 Design LimeSurvey questionnaires entirely in Excel — with multi-language support, automatic HTML formatting, and one-click import.
 
 ## What is this?
@@ -19,7 +20,7 @@ An Excel template + R conversion script that lets you author LimeSurvey surveys 
 
 ### Option 1: Use the Web App (no installation needed)
 
-Go to **[shiny.os.md/limesurvey-excel-builder](https://limesurvey-excel-builder.shinypal.com/)**, upload your `.xlsx` file, and download the converted `.txt` file ready for LimeSurvey import.
+Go to **[shinypal.com](https://limesurvey-excel-builder.shinypal.com/)**, upload your `.xlsx` file, and download the converted `.txt` file ready for LimeSurvey import.
 
 ### Option 2: Run the R Script Locally
 
