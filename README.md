@@ -20,7 +20,7 @@ An Excel template + R conversion script that lets you author LimeSurvey surveys 
 
 ### Option 1: Use the Web App (no installation needed)
 
-Go to **[shiny.os.md/limesurvey-excel-builder](https://shiny.os.md/limesurvey-excel-builder/)**, upload your `.xlsx` file, and download the converted `.txt` file ready for LimeSurvey import.
+Go to **[shiny.os.md/limesurvey-excel-builder](https://limesurvey-excel-builder.shinypal.com/)**, upload your `.xlsx` file, and download the converted `.txt` file ready for LimeSurvey import.
 
 ### Option 2: Run the R Script Locally
 
