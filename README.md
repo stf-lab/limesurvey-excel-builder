@@ -55,10 +55,11 @@ Instead of duplicating every row for each language, add columns:
 | What is your age? | | Quel est votre âge ? | | ¿Cuál es su edad? | |
 
 The R script automatically:
-- Detects all `text_xx` / `help_xx` columns
+- Infers the base language from the **first** `text_xx` column (e.g. `text_en` → `en`)
+- Treats remaining `text_xx` columns as additional languages, in left-to-right column order
 - Generates the multi-language TSV rows LimeSurvey expects
 - Falls back to the base language (or any available language) for untranslated cells
-- Auto-sets the `additional_languages` survey setting
+- Auto-sets both the `language` and `additional_languages` survey settings from the detected columns — no manual S rows needed
 
 ### Automatic HTML Conversion
 
@@ -74,6 +75,7 @@ Write plain text in Excel. The R script handles all HTML:
   - Font color → `<span style='color:#HEX'>`
 - **Partial formatting** — if only one word in a cell is bold or colored, only that word gets HTML tags
 - Cells already containing HTML are passed through unchanged
+- **S rows are always plain text** — HTML conversion is never applied to survey settings rows, regardless of cell formatting. If formatting is detected on an S row (e.g. LibreOffice auto-formatting an email address as a hyperlink), the script emits a warning and ignores it
 
 ### Survey Structure
 
@@ -99,7 +101,7 @@ Row order matters: S → SL → G → Q → SQ → A → Q → SQ → A → ... 
 
 ## Configuration
 
-In the R script, set the input filename (line 23):
+In the R script, set the input filename (line 29):
 
 ```r
 input_file <- "limesurvey_survey_builder.xlsx"
@@ -124,7 +126,7 @@ The R script warns about codes containing underscores.
 1. Insert new columns after the existing language columns (e.g., `text_de`, `help_de`)
 2. Translate the text for G, Q, SQ, A, and SL rows
 3. Leave `text_xx` empty for S rows (settings are language-independent)
-4. Run the R script — it auto-detects the new language columns
+4. Run the R script — it auto-detects the new language columns and updates the language settings automatically
 
 Untranslated cells automatically fall back to the base language, so you can translate incrementally.
 
@@ -148,6 +150,7 @@ The R script validates your survey before export:
 - Checks for valid class values
 - Detects duplicate question codes per language
 - Warns about underscores in question codes
+- Warns about rich text formatting on S rows (e.g. LibreOffice hyperlink auto-formatting)
 - Reports row counts by class type
 - Lists advanced attributes in use
 
@@ -160,6 +163,7 @@ The R script validates your survey before export:
 | Translations don't appear | The script auto-generates all rows per language; ensure columns are named `text_xx` / `help_xx` |
 | Special characters garbled | Output uses UTF-8 with BOM — import should auto-detect encoding |
 | LimeSurvey renames codes | Codes with underscores get stripped; use alphanumeric only |
+| Import error on email/URL settings | LibreOffice auto-formats email addresses and URLs as colored hyperlinks. The script detects and ignores this formatting for S rows, but check the conversion log for warnings |
 
 ## License
 
