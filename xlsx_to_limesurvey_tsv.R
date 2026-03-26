@@ -60,44 +60,52 @@ text_langs <- sub("^text_", "", text_cols)
 help_langs <- sub("^help_", "", help_cols)
 all_langs <- unique(c(text_langs, help_langs))
 
-# Determine base language from S row
-base_lang <- "en"
-for (i in seq_len(nrow(df))) {
-  if (!is.na(df$class[i]) && df$class[i] == "S" &&
-      !is.na(df$name[i]) && df$name[i] == "language") {
-    for (tc in text_cols) {
-      val <- df[[tc]][i]
-      if (!is.na(val) && val != "") { base_lang <- val; break }
-    }
-    break
-  }
+# Determine base language from the FIRST text_xx column (columns-driven).
+# Additional languages are inferred from the remaining text_xx columns, in order.
+# The 'language' and 'additional_languages' S rows are auto-populated from this
+# detection, so they do not need to be maintained manually in the Excel sheet.
+if (length(text_cols) > 0) {
+  base_lang <- sub("^text_", "", text_cols[1])
+  cat(sprintf("  Detected base language from first text column: %s\n", base_lang))
+} else {
+  base_lang <- "en"
+  cat("  WARNING: No text_xx columns found. Defaulting base language to 'en'.\n")
 }
 
-other_langs <- sort(setdiff(all_langs, base_lang))
+# Other languages: remaining text_xx columns in column order, then any help-only langs
+other_langs <- sub("^text_", "", text_cols[-1])
+help_only <- setdiff(help_langs, c(base_lang, other_langs))
+other_langs <- c(other_langs, help_only)
 lang_order <- c(base_lang, other_langs)
 
-# Auto-fix additional_languages S row to match detected columns
-# This ensures LimeSurvey import always gets the correct language list
-if (length(other_langs) > 0) {
-  found_addlang <- FALSE
-  for (i in seq_len(nrow(df))) {
-    if (!is.na(df$class[i]) && df$class[i] == "S" &&
-        !is.na(df$name[i]) && df$name[i] == "additional_languages") {
-      old_val <- df[[paste0("text_", base_lang)]][i]
-      new_val <- paste(other_langs, collapse = " ")
-      if (is.na(old_val) || old_val != new_val) {
-        df[[paste0("text_", base_lang)]][i] <- new_val
+# Auto-populate 'language' and 'additional_languages' S rows from detected columns.
+# This overrides whatever is written there so the Excel sheet stays self-consistent.
+base_lang_col <- paste0("text_", base_lang)
+for (i in seq_len(nrow(df))) {
+  if (is.na(df$class[i]) || df$class[i] != "S") next
+  if (is.na(df$name[i])) next
+
+  if (df$name[i] == "language") {
+    old_val <- if (base_lang_col %in% names(df)) df[[base_lang_col]][i] else NA
+    if (is.na(old_val) || old_val != base_lang) {
+      if (base_lang_col %in% names(df)) {
+        df[[base_lang_col]][i] <- base_lang
+        cat(sprintf("  Auto-updated language: '%s' -> '%s'\n",
+                    ifelse(is.na(old_val), "", old_val), base_lang))
+      }
+    }
+  }
+
+  if (df$name[i] == "additional_languages") {
+    new_val <- paste(other_langs, collapse = " ")
+    old_val <- if (base_lang_col %in% names(df)) df[[base_lang_col]][i] else NA
+    if (is.na(old_val) || old_val != new_val) {
+      if (base_lang_col %in% names(df)) {
+        df[[base_lang_col]][i] <- new_val
         cat(sprintf("  Auto-updated additional_languages: '%s' -> '%s'\n",
                     ifelse(is.na(old_val), "", old_val), new_val))
       }
-      found_addlang <- TRUE
-      break
     }
-  }
-  if (!found_addlang) {
-    cat(sprintf("  WARNING: No 'additional_languages' S row found!\n"))
-    cat(sprintf("  Add S row: name=additional_languages, text_%s=%s\n",
-                base_lang, paste(other_langs, collapse = " ")))
   }
 }
 
@@ -220,6 +228,11 @@ if (length(rich_text_map) > 0) {
       if (ss_index %in% names(rich_text_map)) {
         data_row <- row_num - 1
         col_name <- col_names_vec[col_num]
+        # Skip HTML conversion for S (settings) rows -- plain text only
+        if (!is.na(df$class[data_row]) && df$class[data_row] == "S") {
+          cat(sprintf("  [%s] Row %d: S row -- rich text formatting ignored\n", col_name, row_num))
+          next
+        }
         df[[col_name]][data_row] <- rich_text_map[[ss_index]]
         n_rich <- n_rich + 1
         cat(sprintf("  [%s] Row %d: rich text applied\n", col_name, row_num))
@@ -241,6 +254,29 @@ for (col_name in fmt_col_names) {
   col_pos <- match(col_name, col_names_vec)
   if (is.na(col_pos)) next
   for (row_i in seq_len(nrow(df))) {
+    # Skip HTML conversion for S (settings) rows -- plain text only
+    if (!is.na(df$class[row_i]) && df$class[row_i] == "S") {
+      # Warn if cell has formatting that will be ignored
+      cell_text_s <- df[[col_name]][row_i]
+      if (!is.na(cell_text_s) && cell_text_s != "") {
+        excel_row_s <- row_i + 1
+        cell_info_s <- cells_tidy[cells_tidy$row == excel_row_s & cells_tidy$col == col_pos, ]
+        if (nrow(cell_info_s) > 0) {
+          fmt_id_s <- cell_info_s$local_format_id[1]
+          if (!is.na(fmt_id_s)) {
+            has_fmt_s <- isTRUE(formats$local$font$bold[fmt_id_s]) ||
+                         isTRUE(formats$local$font$italic[fmt_id_s]) ||
+                         (!is.na(formats$local$font$color$rgb[fmt_id_s]) &&
+                          formats$local$font$color$rgb[fmt_id_s] != "")
+            if (has_fmt_s) {
+              cat(sprintf("  WARNING: Rich text formatting on S row (name='%s', col=%s) -- ignored. Check for auto-formatted hyperlinks in LibreOffice.\n",
+                          ifelse(is.na(df$name[row_i]), "", df$name[row_i]), col_name))
+            }
+          }
+        }
+      }
+      next
+    }
     cell_text <- df[[col_name]][row_i]
     if (is.na(cell_text) || cell_text == "") next
     if (grepl("<[a-zA-Z][^>]*>", cell_text)) next
