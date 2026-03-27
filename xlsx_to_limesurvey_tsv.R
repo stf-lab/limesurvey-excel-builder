@@ -20,6 +20,11 @@
 ##   - Outputs UTF-8 TSV with BOM
 ##
 ## Dependencies: readxl, tidyxl, xml2 (auto-installed if missing)
+##
+## NOTE: If you also use limesurvey_tsv_to_xlsx.R (which loads openxlsx2),
+##       restart R before running this script. The xml2 and openxlsx2
+##       packages both define xml_ns() and conflict with each other.
+##       In RStudio: Session > Restart R (Ctrl+Shift+F10)
 ## ==============================================================================
 
 # --- Set working directory to script location ---
@@ -27,7 +32,19 @@ setwd(dirname(rstudioapi::getActiveDocumentContext()$path))
 
 # --- Configuration ---
 input_file  <- "limesurvey_survey_builder.xlsx"
-output_file <- sub("\\.[^.]+$", ".txt", input_file)
+
+# Output: same base name with .txt extension; adds _1, _2, ... if file exists
+safe_filename <- function(base, ext) {
+  candidate <- paste0(base, ".", ext)
+  if (!file.exists(candidate)) return(candidate)
+  i <- 1
+  repeat {
+    candidate <- paste0(base, "_", i, ".", ext)
+    if (!file.exists(candidate)) return(candidate)
+    i <- i + 1
+  }
+}
+output_file <- safe_filename(sub("\\.[^.]+$", "", input_file), "txt")
 
 # --- Dependencies ---
 for (pkg in c("readxl", "tidyxl", "xml2")) {
@@ -109,6 +126,47 @@ for (i in seq_len(nrow(df))) {
   }
 }
 
+# If 'language' S row is missing entirely, inject it after the last S row
+has_lang_row <- any(df$class == "S" & df$name == "language", na.rm = TRUE)
+has_addl_row <- any(df$class == "S" & df$name == "additional_languages", na.rm = TRUE)
+
+if (!has_lang_row || !has_addl_row) {
+  # Find position of last S row
+  s_positions <- which(df$class == "S")
+  insert_after <- if (length(s_positions) > 0) max(s_positions) else 0
+
+  new_rows <- list()
+  if (!has_lang_row) {
+    lang_row <- setNames(rep(NA_character_, ncol(df)), names(df))
+    lang_row["class"] <- "S"
+    lang_row["name"] <- "language"
+    if (base_lang_col %in% names(df)) lang_row[base_lang_col] <- base_lang
+    new_rows[[length(new_rows) + 1]] <- lang_row
+    cat(sprintf("  Auto-created S row: language = '%s'\n", base_lang))
+  }
+  if (!has_addl_row && length(other_langs) > 0) {
+    addl_row <- setNames(rep(NA_character_, ncol(df)), names(df))
+    addl_row["class"] <- "S"
+    addl_row["name"] <- "additional_languages"
+    if (base_lang_col %in% names(df)) addl_row[base_lang_col] <- paste(other_langs, collapse = " ")
+    new_rows[[length(new_rows) + 1]] <- addl_row
+    cat(sprintf("  Auto-created S row: additional_languages = '%s'\n",
+                paste(other_langs, collapse = " ")))
+  }
+
+  if (length(new_rows) > 0) {
+    new_df <- as.data.frame(do.call(rbind, new_rows), stringsAsFactors = FALSE)
+    names(new_df) <- names(df)
+    if (insert_after == 0) {
+      df <- rbind(new_df, df)
+    } else if (insert_after == nrow(df)) {
+      df <- rbind(df[1:insert_after, ], new_df)
+    } else {
+      df <- rbind(df[1:insert_after, ], new_df, df[(insert_after + 1):nrow(df), ])
+    }
+  }
+}
+
 cat(sprintf("  Base language: %s\n", base_lang))
 cat(sprintf("  All languages: %s\n", paste(lang_order, collapse = ", ")))
 cat(sprintf("  Text columns: %s\n", paste(text_cols, collapse = ", ")))
@@ -124,8 +182,54 @@ unlink(tmp_dir, recursive = TRUE)
 dir.create(tmp_dir, showWarnings = FALSE)
 unzip(input_file, exdir = tmp_dir, overwrite = TRUE)
 
+# Helper: apply Excel tint/shade to a hex color (OOXML spec, HSL color space)
+# Negative tint = darken (luminance toward 0), positive = lighten (toward 1)
+apply_tint <- function(hex6, tint) {
+  if (is.na(tint) || tint == 0) return(hex6)
+  r <- strtoi(substr(hex6, 1, 2), 16)
+  g <- strtoi(substr(hex6, 3, 4), 16)
+  b <- strtoi(substr(hex6, 5, 6), 16)
+  rn <- r / 255; gn <- g / 255; bn <- b / 255
+  mx <- max(rn, gn, bn); mn <- min(rn, gn, bn)
+  l <- (mx + mn) / 2
+  if (mx == mn) { h <- 0; s <- 0 }
+  else {
+    d <- mx - mn
+    s <- if (l > 0.5) d / (2 - mx - mn) else d / (mx + mn)
+    h <- if (mx == rn) ((gn - bn) / d + (if (gn < bn) 6 else 0))
+         else if (mx == gn) ((bn - rn) / d + 2)
+         else ((rn - gn) / d + 4)
+    h <- h / 6
+  }
+  if (tint < 0) l <- l * (1 + tint)
+  else l <- l * (1 - tint) + tint
+  l <- max(0, min(1, l))
+  hue2rgb <- function(p, q, t) {
+    if (t < 0) t <- t + 1; if (t > 1) t <- t - 1
+    if (t < 1/6) return(p + (q - p) * 6 * t)
+    if (t < 1/2) return(q)
+    if (t < 2/3) return(p + (q - p) * (2/3 - t) * 6)
+    return(p)
+  }
+  if (s == 0) { ro <- go <- bo <- l }
+  else {
+    q <- if (l < 0.5) l * (1 + s) else l + s - l * s
+    p <- 2 * l - q
+    ro <- hue2rgb(p, q, h + 1/3)
+    go <- hue2rgb(p, q, h)
+    bo <- hue2rgb(p, q, h - 1/3)
+  }
+  toupper(sprintf("%02X%02X%02X", round(ro * 255), round(go * 255), round(bo * 255)))
+}
+
 ss_path <- file.path(tmp_dir, "xl", "sharedStrings.xml")
-if (!file.exists(ss_path)) stop("Cannot find sharedStrings.xml in xlsx")
+if (!file.exists(ss_path)) {
+  cat("  No sharedStrings.xml (normal for programmatically generated xlsx).\n")
+  cat("  Partial rich text step skipped; whole-cell formatting will be used instead.\n")
+  rich_text_map <- list()
+  fmt_col_names    <- c(text_cols, help_cols)
+  fmt_col_positions <- match(fmt_col_names, col_names_vec)
+} else {
 
 ss_xml <- read_xml(ss_path)
 ns <- xml_ns(ss_xml)
@@ -143,8 +247,13 @@ run_to_html <- function(text, rpr_node, ns) {
     color_hex <- NULL
     if (!is.na(color_node)) {
       rgb_val <- xml_attr(color_node, "rgb")
+      tint_val <- xml_attr(color_node, "tint")
       if (!is.na(rgb_val) && nchar(rgb_val) >= 6) {
         hex6 <- toupper(substring(rgb_val, nchar(rgb_val) - 5, nchar(rgb_val)))
+        # Apply tint if present (theme colors with shade/tint modification)
+        if (!is.na(tint_val) && tint_val != "") {
+          hex6 <- apply_tint(hex6, as.numeric(tint_val))
+        }
         if (hex6 != "000000" && hex6 != "") color_hex <- paste0("#", hex6)
       }
     }
@@ -241,6 +350,7 @@ if (length(rich_text_map) > 0) {
     cat(sprintf("  Applied rich text to %d cells\n", n_rich))
   }
 }
+} # end else (sharedStrings.xml exists)
 
 # ==============================================================================
 # STEP 4: Whole-cell formatting (tidyxl)
@@ -292,8 +402,13 @@ for (col_name in fmt_col_names) {
     if (!is.na(ul_val) && ul_val != "" && ul_val != "none") is_underline <- TRUE
     color_hex <- NULL
     font_color_rgb <- formats$local$font$color$rgb[fmt_id]
+    font_color_tint <- formats$local$font$color$tint[fmt_id]
     if (!is.na(font_color_rgb) && font_color_rgb != "") {
       hex6 <- toupper(substring(font_color_rgb, 3, 8))
+      # Apply tint if present (theme colors with shade/tint modification)
+      if (!is.na(font_color_tint) && font_color_tint != 0) {
+        hex6 <- apply_tint(hex6, font_color_tint)
+      }
       if (hex6 != "000000" && hex6 != "" && nchar(hex6) == 6) color_hex <- paste0("#", hex6)
     }
     if (is_bold || is_italic || is_underline || !is.null(color_hex)) {
@@ -569,8 +684,21 @@ if (nrow(q_rows) > 0) {
 # STEP 8: Write TSV with UTF-8 BOM
 # ==============================================================================
 cat("\n--- Writing output ---\n")
+
+# TSV quoting: fields containing tabs, newlines, or double quotes
+# must be wrapped in double quotes, with inner quotes doubled.
+quote_tsv_field <- function(x) {
+  if (is.na(x)) return("")
+  if (grepl("[\t\n\"]", x)) {
+    return(paste0("\"", gsub("\"", "\"\"", x), "\""))
+  }
+  x
+}
+
 header_line <- paste(tsv_cols, collapse = "\t")
-data_lines  <- apply(df_out, 1, function(row) paste(row, collapse = "\t"))
+data_lines  <- apply(df_out, 1, function(row) {
+  paste(sapply(row, quote_tsv_field), collapse = "\t")
+})
 tsv_content <- paste(c(header_line, data_lines), collapse = "\n")
 
 con <- file(output_file, open = "wb")

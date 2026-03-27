@@ -25,16 +25,10 @@ Go to **[limesurvey-excel-builder](https://limesurvey-excel-builder.60.md/)**, u
 ### Option 2: Run the R Script Locally
 
 1. Open `limesurvey_survey_builder.xlsx` in Excel
-2. Edit the **Survey Design** sheet — add your questions, answers, and settings
-3. Run `xlsx_to_limesurvey_tsv.R` in RStudio. The script will generate a *.txt file
-4. In LimeSurvey: **Create Survey → Import → select the generated `*.txt` file**
+2. Edit the **Survey Design** sheet -- add your questions, answers, and settings
+3. Run `xlsx_to_limesurvey_tsv.R` in RStudio
+4. In LimeSurvey: **Create Survey > Import > select the generated `.txt` file**
 
-## Files
-
-| File | Description |
-|------|-------------|
-| `limesurvey_survey_builder.xlsx` | Excel template with example survey, reference sheets, and instructions |
-| `xlsx_to_limesurvey_tsv.R` | R script that converts the Excel file to LimeSurvey TSV import format |
 
 ## Features
 
@@ -95,19 +89,19 @@ Row order matters: S → SL → G → Q → SQ → A → Q → SQ → A → ... 
 ## Requirements
 
 - **Excel** (or LibreOffice Calc) for editing the template
-- **R** (≥ 4.0) with RStudio
+- **R** (>= 4.0) with RStudio
 - R packages (auto-installed on first run): `readxl`, `tidyxl`, `xml2`
-- **LimeSurvey** (≥ 3.x) for import
+- **LimeSurvey** (>= 3.x) for import
 
 ## Configuration
 
-In the R script, set the input filename (line 29):
+In the R script, set the input filename:
 
 ```r
 input_file <- "limesurvey_survey_builder.xlsx"
 ```
 
-The output file is generated automatically with a `.txt` extension.
+The output file uses the same base name with a `.txt` extension.
 
 ## Question Codes
 
@@ -164,6 +158,37 @@ The R script validates your survey before export:
 | Special characters garbled | Output uses UTF-8 with BOM — import should auto-detect encoding |
 | LimeSurvey renames codes | Codes with underscores get stripped; use alphanumeric only |
 | Import error on email/URL settings | LibreOffice auto-formats email addresses and URLs as colored hyperlinks. The script detects and ignores this formatting for S rows, but check the conversion log for warnings |
+
+## Inverse Converter: LimeSurvey to Excel
+
+If you need to convert an existing LimeSurvey survey back to the Excel Builder format for editing, an additional script and web tool are available.
+
+This is useful when you want to edit a survey that was originally created in the LimeSurvey web interface.
+
+### How to use
+
+**Option A: Web app** -- go to [limesurvey-excel-builder](https://limesurvey-excel-builder.60.md/), scroll to the second section, upload your `.txt` export, and download the `.xlsx` file.
+
+**Option B: R script** -- set `input_file` in `limesurvey_tsv_to_xlsx.R` and run it in RStudio. Requires the `openxlsx2` package.
+
+> **Note:** The forward and inverse R scripts use packages that conflict with each other (`xml2` and `openxlsx2`). If running both in the same RStudio session, restart R between them (Ctrl+Shift+F10).
+
+### What it does
+
+- Collapses multi-language rows into side-by-side `text_xx` / `help_xx` columns
+- Converts HTML formatting back to Excel rich text (bold, italic, underline, color)
+- Drops server-specific settings for cross-server portability
+- Produces a formatted workbook with conditional formatting, data validations, and reference sheets
+- The resulting `.xlsx` can be edited and converted back to `.txt` with `xlsx_to_limesurvey_tsv.R`
+
+
+## Files
+
+| File | Description |
+|------|-------------|
+| `limesurvey_survey_builder.xlsx` | Excel template with example survey, reference sheets, and instructions |
+| `xlsx_to_limesurvey_tsv.R` | R script that converts the Excel file to LimeSurvey TSV import format |
+| `limesurvey_tsv_to_xlsx.R` | R script that converts a LimeSurvey TSV export back to the Excel Builder format |
 
 ## License
 
