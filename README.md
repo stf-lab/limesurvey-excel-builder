@@ -11,10 +11,10 @@ An Excel template + R conversion script that lets you author LimeSurvey surveys 
 - **Format text directly in Excel** — bold, italic, underline, and color any word or phrase in Excel; the exact formatting will be preserved in the questionnaire, including partial formatting within a cell
 - **Faster authoring** — type questions, answers, and logic in a familiar spreadsheet environment
 - **Easy translations** — add language columns (`text_fr`, `text_es`, `text_ro`, ...) instead of duplicating rows
-- **Version control** — track changes with Git, collaborate with colleagues on survey design
 - **Batch editing** — find/replace, copy/paste, and reorder questions using standard Excel operations
 - **Offline work** — no need for a running LimeSurvey instance during survey design
 - **Reusable blocks** — copy question groups between surveys by copying rows
+- **Quota management** — define response quotas per segment directly in a dedicated Excel sheet, with translated quota-full messages and AND logic across multiple criteria
 
 ## Quick Start
 
@@ -25,9 +25,10 @@ Go to **[limesurvey-excel-builder](https://limesurvey-excel-builder.60.md/)**, u
 ### Option 2: Run the R Script Locally
 
 1. Open `limesurvey_survey_builder.xlsx` in Excel
-2. Edit the **Survey Design** sheet -- add your questions, answers, and settings
-3. Run `xlsx_to_limesurvey_tsv.R` in RStudio
-4. In LimeSurvey: **Create Survey > Import > select the generated `.txt` file**
+2. Edit the **Survey Design** sheet — add your questions, answers, and settings
+3. (Optional) Edit the **Quotas** sheet — define response quotas per segment
+4. Run `xlsx_to_limesurvey_tsv.R` in RStudio
+5. In LimeSurvey: **Create Survey > Import > select the generated `.txt` file**
 
 
 ## Features
@@ -37,6 +38,8 @@ Go to **[limesurvey-excel-builder](https://limesurvey-excel-builder.60.md/)**, u
 - **Color-coded rows** — conditional formatting highlights groups, questions, subquestions, answers, and settings in different colors
 - **Dropdown validation** — class, mandatory, and other columns have dropdown lists
 - **4 reference sheets** — Question Types, Relevance & Validation, Survey Settings, Instructions
+- **Quotas sheet** — define response quotas with translated messages, AND-logic members, and active/inactive toggle
+- **Per-language header colors** — each language gets a distinct color across Survey Design and Quotas sheets
 - **41 advanced attribute columns** — array filtering, sliders, date ranges, validation, and more
 - **Example survey** — 178 rows covering 30+ question types with skip logic, validation, calculated fields, and tailored text
 
@@ -85,6 +88,54 @@ Each row in the Excel sheet represents one survey element:
 | **A** | Answer option | Choice in a list or scale |
 
 Row order matters: S → SL → G → Q → SQ → A → Q → SQ → A → ... → G → ...
+
+### Quota Support
+
+Define response quotas in the dedicated **Quotas** sheet — one row per quota, no TSV syntax needed:
+
+| quota_name | quota_limit | active | quota_action | autoload_url | message_en | message_ro | question_code_1 | answer_code_1 | question_code_2 | answer_code_2 |
+|---|---|---|---|---|---|---|---|---|---|---|
+| Males North | 15 | N | 2 | 0 | Quota full. Thank you. | Cota este plină. | gender | M | region | N |
+| Females North | 15 | N | 2 | 0 | Quota full. Thank you. | Cota este plină. | gender | F | region | N |
+
+**Columns:**
+
+- **quota_name** — unique name for this quota
+- **quota_limit** — maximum number of completed responses before the quota triggers
+- **active** — `Y` = enforced, `N` = disabled. Set `N` while testing, switch to `Y` when ready
+- **quota_action** — `1` = terminate survey silently, `2` = terminate and show message
+- **autoload_url** — `0` = no redirect, `1` = auto-redirect when quota is full
+- **message_xx** — translated message shown when the quota is full (one column per survey language, falls back to base language if empty)
+- **question_code_N / answer_code_N** — each pair links an answer to the quota. Add `_3`, `_4`, etc. for more conditions
+
+**How members work:**
+
+All members within a quota are **ANDed** together: the quota only counts a response when ALL members match.
+
+Example: `question_code_1=gender, answer_code_1=M, question_code_2=region, answer_code_2=N` → counts only male respondents from the North region.
+
+**Important notes:**
+
+- Only **list-type questions** (L, !) can be quota members — not numeric (N) or text (S)
+- To quota on numeric ranges (e.g. age > 40), create a hidden list question with `always_hide=1` and a default expression like `{if(age >= 40, 'O40', 'U40')}`
+- The R script generates the correct QTA, QTALS, and QTAM rows in the TSV with proper placement and ID linking
+- The inverse converter extracts quotas from existing TSV exports back into the flat Quotas sheet format
+
+### Per-Language Header Colors
+
+Each language gets a distinct header color in both the Survey Design and Quotas sheets, making it easy to visually identify language columns:
+
+| Language | Color |
+|----------|-------|
+| en | Dark blue-gray |
+| ro | Purple |
+| fr | Blue |
+| es | Orange |
+| de | Green |
+| ar | Red |
+| pt | Teal |
+
+Additional languages are auto-assigned from a fallback palette. The same color is used for `text_xx`/`help_xx` in Survey Design and `message_xx` in Quotas.
 
 ## Requirements
 
@@ -136,6 +187,7 @@ The included example demonstrates:
 - Array filtering (show only selected conditions)
 - Tailored closing message with expression logic
 - Multi-language content (English, French, Romanian, Spanish)
+- 6 example quotas (Males/Females × North/Center/South regions with translated messages)
 
 ## Validation
 
@@ -145,8 +197,9 @@ The R script validates your survey before export:
 - Detects duplicate question codes per language
 - Warns about underscores in question codes
 - Warns about rich text formatting on S rows (e.g. LibreOffice hyperlink auto-formatting)
-- Reports row counts by class type
+- Reports row counts by class type (including QTA, QTALS, QTAM when quotas are present)
 - Lists advanced attributes in use
+- Reports quota count and member placement
 
 ## Troubleshooting
 
@@ -158,6 +211,9 @@ The R script validates your survey before export:
 | Special characters garbled | Output uses UTF-8 with BOM — import should auto-detect encoding |
 | LimeSurvey renames codes | Codes with underscores get stripped; use alphanumeric only |
 | Import error on email/URL settings | LibreOffice auto-formats email addresses and URLs as colored hyperlinks. The script detects and ignores this formatting for S rows, but check the conversion log for warnings |
+| Quotas don't appear after import | Verify class is `QTA` (not `QT`), messages go in `relevance` column of QTALS, and QTAM rows are placed after their questions. The script handles this automatically from the Quotas sheet |
+| Quota not counting responses | Only list-type questions (L, !) can be quota members. Numeric (N) and text (S) questions cannot be used directly — create a hidden list question with a default expression as a workaround |
+| Quota message shows in wrong language | Ensure the `message_xx` columns in the Quotas sheet match the survey languages. Empty cells fall back to the base language |
 
 ## Inverse Converter: LimeSurvey to Excel
 
@@ -171,14 +227,15 @@ This is useful when you want to edit a survey that was originally created in the
 
 **Option B: R script** -- set `input_file` in `limesurvey_tsv_to_xlsx.R` and run it in RStudio. Requires the `openxlsx2` package.
 
-> **Note:** The forward and inverse R scripts use packages that conflict with each other (`xml2` and `openxlsx2`). If running both in the same RStudio session, restart R between them (Ctrl+Shift+F10).
+> **Note:** The forward and inverse R scripts use packages that may conflict with each other (`xml2` and `openxlsx2`). If running both in the same RStudio session, restart R between them (Ctrl+Shift+F10).
 
 ### What it does
 
 - Collapses multi-language rows into side-by-side `text_xx` / `help_xx` columns
 - Converts HTML formatting back to Excel rich text (bold, italic, underline, color)
+- Extracts quotas (QTA/QTALS/QTAM) into the flat Quotas sheet format with per-language messages and AND-logic members
 - Drops server-specific settings for cross-server portability
-- Produces a formatted workbook with conditional formatting, data validations, and reference sheets
+- Produces a formatted workbook with conditional formatting, per-language header colors, data validations, and reference sheets (including Relevance & Validation)
 - The resulting `.xlsx` can be edited and converted back to `.txt` with `xlsx_to_limesurvey_tsv.R`
 
 
@@ -186,9 +243,9 @@ This is useful when you want to edit a survey that was originally created in the
 
 | File | Description |
 |------|-------------|
-| `limesurvey_survey_builder.xlsx` | Excel template with example survey, reference sheets, and instructions |
-| `xlsx_to_limesurvey_tsv.R` | R script that converts the Excel file to LimeSurvey TSV import format |
-| `limesurvey_tsv_to_xlsx.R` | R script that converts a LimeSurvey TSV export back to the Excel Builder format |
+| `limesurvey_survey_builder.xlsx` | Excel template with example survey, quotas, reference sheets, and instructions |
+| `xlsx_to_limesurvey_tsv.R` | R script that converts the Excel file to LimeSurvey TSV import format (with quota support) |
+| `limesurvey_tsv_to_xlsx.R` | R script that converts a LimeSurvey TSV export back to the Excel Builder format (with quota extraction) |
 
 ## License
 

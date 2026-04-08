@@ -69,10 +69,16 @@ library(openxlsx2)
 cat("Reading TSV:", input_file, "\n")
 raw <- readLines(input_file, encoding = "UTF-8", warn = FALSE)
 if (length(raw) > 0 && grepl("^\uFEFF", raw[1])) raw[1] <- sub("^\uFEFF", "", raw[1])
-tsv <- read.delim(textConnection(paste(raw, collapse = "\n")),
-                  sep = "\t", header = TRUE, quote = "\"",
+# Write to temp file to preserve UTF-8 encoding (textConnection loses it)
+tmp_tsv <- tempfile(fileext = ".txt")
+con_tmp <- file(tmp_tsv, "wb")
+writeBin(charToRaw(paste(enc2utf8(raw), collapse = "\n")), con_tmp)
+close(con_tmp)
+tsv <- read.delim(tmp_tsv, sep = "\t", header = TRUE, quote = "\"",
                   stringsAsFactors = FALSE, check.names = FALSE,
-                  colClasses = "character", na.strings = character(0))
+                  colClasses = "character", na.strings = character(0),
+                  encoding = "UTF-8")
+unlink(tmp_tsv)
 tsv[is.na(tsv)] <- ""
 tsv[is.na(tsv)] <- ""
 cat(sprintf("  Rows: %d, Columns: %d\n", nrow(tsv), ncol(tsv)))
@@ -90,8 +96,22 @@ for (i in seq_len(nrow(tsv))) {
 }
 
 # Collect all languages from the language column
-all_langs <- sort(unique(tsv$language[tsv$language != "" & !is.na(tsv$language)]))
-other_langs <- setdiff(all_langs, base_lang)
+# Collect all languages preserving original order from TSV
+# Try to get order from S row 'additional_languages' first
+addl_lang_text <- ""
+for (i in seq_len(nrow(tsv))) {
+  if (tsv$class[i] == "S" && tsv$name[i] == "additional_languages" && tsv$text[i] != "") {
+    addl_lang_text <- tsv$text[i]
+    break
+  }
+}
+if (addl_lang_text != "") {
+  other_langs <- strsplit(trimws(addl_lang_text), "\\s+")[[1]]
+} else {
+  # Fallback: order by first appearance in the language column
+  all_lang_vals <- tsv$language[tsv$language != "" & !is.na(tsv$language)]
+  other_langs <- setdiff(unique(all_lang_vals), base_lang)
+}
 lang_order <- c(base_lang, other_langs)
 
 cat(sprintf("  Base language: %s\n", base_lang))
@@ -138,6 +158,112 @@ cat(sprintf("  SL rows: %d kept (from %d)\n",
 # ==============================================================================
 content_rows <- tsv[tsv$class %in% c("G", "Q", "SQ", "A") & tsv$language == base_lang, ]
 cat(sprintf("  Content rows (base language): %d\n", nrow(content_rows)))
+
+# ==============================================================================
+# STEP 5b: Extract quota rows (QTA, QTALS, QTAM) into Quotas sheet format
+# ==============================================================================
+cat("\nExtracting quotas...\n")
+
+qta_rows  <- tsv[tsv$class == "QTA", ]
+qtals_rows <- tsv[tsv$class == "QTALS", ]
+qtam_rows  <- tsv[tsv$class == "QTAM", ]
+
+quota_df <- NULL  # will hold the flat Quotas sheet data
+
+if (nrow(qta_rows) > 0) {
+  cat(sprintf("  Found: %d QTA, %d QTALS, %d QTAM rows\n",
+              nrow(qta_rows), nrow(qtals_rows), nrow(qtam_rows)))
+
+  # Map QTAM rows to their question codes by proximity in the TSV.
+  # "Quota members are assumed to belong to the question that precedes them."
+  # Walk through all TSV rows, tracking the current question code.
+  current_qcode <- ""
+  qtam_question_map <- list()  # QTAM row index (in tsv) -> question code
+
+  for (i in seq_len(nrow(tsv))) {
+    cls <- tsv$class[i]
+    if (cls == "Q" && tsv$language[i] == base_lang) {
+      current_qcode <- tsv$name[i]
+    } else if (cls == "QTAM") {
+      qtam_question_map[[as.character(i)]] <- current_qcode
+    }
+  }
+
+  # Build one row per quota (QTA id)
+  quota_list <- list()
+
+  for (q in seq_len(nrow(qta_rows))) {
+    qta <- qta_rows[q, ]
+    qta_id <- qta$id
+
+    # QTA field mapping (per LimeSurvey TSV manual):
+    #   name = quota name, mandatory = limit, other = action,
+    #   default = active, same_default = autoload_url
+    qrow <- list(
+      quota_name   = qta$name,
+      quota_limit  = qta$mandatory,
+      active       = if (qta$default == "1") "Y" else "N",
+      quota_action = qta$other,
+      autoload_url = qta$same_default
+    )
+
+    # QTALS: messages per language (relevance = message)
+    qtals_for_quota <- qtals_rows[qtals_rows$related_id == qta_id, ]
+    for (lang in lang_order) {
+      msg_col <- paste0("message_", lang)
+      lang_match <- qtals_for_quota[qtals_for_quota$language == lang, ]
+      qrow[[msg_col]] <- if (nrow(lang_match) > 0) lang_match$relevance[1] else ""
+    }
+
+    # QTAM: members for this quota (related_id = qta_id)
+    qtam_for_quota <- qtam_rows[qtam_rows$related_id == qta_id, ]
+    for (m in seq_len(nrow(qtam_for_quota))) {
+      member <- qtam_for_quota[m, ]
+      # Find the question code for this QTAM row using the proximity map
+      tsv_idx <- which(tsv$class == "QTAM" &
+                       tsv$id == member$id &
+                       tsv$related_id == member$related_id)
+      qcode <- ""
+      if (length(tsv_idx) > 0) {
+        qcode <- qtam_question_map[[as.character(tsv_idx[1])]]
+        if (is.null(qcode)) qcode <- ""
+      }
+      qrow[[paste0("question_code_", m)]] <- qcode
+      qrow[[paste0("answer_code_", m)]]   <- member$name  # name = answer code
+    }
+
+    quota_list[[length(quota_list) + 1]] <- qrow
+  }
+
+  # Determine max number of members across all quotas
+  max_members <- 0
+  for (qr in quota_list) {
+    n <- length(grep("^question_code_", names(qr)))
+    if (n > max_members) max_members <- n
+  }
+
+  # Build Quotas columns
+  q_cols <- c("quota_name", "quota_limit", "active", "quota_action", "autoload_url")
+  for (lang in lang_order) q_cols <- c(q_cols, paste0("message_", lang))
+  for (m in seq_len(max_members)) {
+    q_cols <- c(q_cols, paste0("question_code_", m), paste0("answer_code_", m))
+  }
+
+  # Build dataframe
+  q_list <- lapply(quota_list, function(qr) {
+    sapply(q_cols, function(col) {
+      v <- qr[[col]]
+      if (is.null(v) || is.na(v)) "" else as.character(v)
+    })
+  })
+  quota_df <- as.data.frame(do.call(rbind, q_list), stringsAsFactors = FALSE)
+  names(quota_df) <- q_cols
+
+  cat(sprintf("  Quotas extracted: %d (max %d members per quota)\n",
+              nrow(quota_df), max_members))
+} else {
+  cat("  No quotas found in TSV\n")
+}
 
 # ==============================================================================
 # STEP 6: Determine which advanced attribute columns to keep
@@ -376,10 +502,11 @@ html_to_rich_text <- function(html_str) {
 
       cur_color <- NULL
       if (length(color_stack) > 0) {
-        # Find the last non-NULL color in the stack
+        # Find the last actual color in the stack (skip sentinels and NULLs)
         for (ci in rev(seq_along(color_stack))) {
-          if (!is.null(color_stack[[ci]])) {
-            cur_color <- color_stack[[ci]]
+          cv <- color_stack[[ci]]
+          if (!is.null(cv) && grepl("^FF[0-9A-F]{6}$", cv)) {
+            cur_color <- cv
             break
           }
         }
@@ -401,29 +528,48 @@ html_to_rich_text <- function(html_str) {
       tag <- tok$value
       tag_lower <- tolower(tag)
 
-      if (grepl("^<(strong|b)(\\s|>)", tag_lower))        bold <- TRUE
-      else if (grepl("^</(strong|b)>", tag_lower))         bold <- FALSE
-      else if (grepl("^<(em|i)(\\s|>)", tag_lower))        italic <- TRUE
-      else if (grepl("^</(em|i)>", tag_lower))             italic <- FALSE
-      else if (grepl("^<u(\\s|>)", tag_lower))             underline <- TRUE
-      else if (grepl("^</u>", tag_lower))                  underline <- FALSE
-      else if (grepl("^<span", tag_lower)) {
+      # Check for color style on ANY opening tag
+      tag_has_color <- FALSE
+      if (grepl("^<[a-z]", tag_lower) && grepl("style=", tag_lower)) {
         m <- regmatches(tag, regexpr("#[0-9A-Fa-f]{6}", tag))
         if (length(m) > 0 && nchar(m) == 7) {
           hex <- toupper(sub("#", "", m))
           if (hex != "000000") {
             color_stack[[length(color_stack) + 1]] <- paste0("FF", hex)
-          } else {
-            color_stack[[length(color_stack) + 1]] <- NULL
+            tag_has_color <- TRUE
           }
-        } else {
-          color_stack[[length(color_stack) + 1]] <- NULL
         }
       }
+
+      if (grepl("^<(strong|b)(\\s|>)", tag_lower)) {
+        bold <- TRUE
+        if (!tag_has_color) color_stack[[length(color_stack) + 1]] <- "BOLD_NO_COLOR"
+      }
+      else if (grepl("^</(strong|b)>", tag_lower)) {
+        bold <- FALSE
+        if (length(color_stack) > 0) color_stack[[length(color_stack)]] <- NULL
+      }
+      else if (grepl("^<(em|i)(\\s|>)", tag_lower)) {
+        italic <- TRUE
+        if (!tag_has_color) color_stack[[length(color_stack) + 1]] <- "ITALIC_NO_COLOR"
+      }
+      else if (grepl("^</(em|i)>", tag_lower)) {
+        italic <- FALSE
+        if (length(color_stack) > 0) color_stack[[length(color_stack)]] <- NULL
+      }
+      else if (grepl("^<u(\\s|>)", tag_lower)) {
+        underline <- TRUE
+        if (!tag_has_color) color_stack[[length(color_stack) + 1]] <- "U_NO_COLOR"
+      }
+      else if (grepl("^</u>", tag_lower)) {
+        underline <- FALSE
+        if (length(color_stack) > 0) color_stack[[length(color_stack)]] <- NULL
+      }
+      else if (grepl("^<span", tag_lower)) {
+        if (!tag_has_color) color_stack[[length(color_stack) + 1]] <- NULL
+      }
       else if (grepl("^</span>", tag_lower)) {
-        if (length(color_stack) > 0) {
-          color_stack[[length(color_stack)]] <- NULL
-        }
+        if (length(color_stack) > 0) color_stack[[length(color_stack)]] <- NULL
       }
     }
   }
@@ -508,6 +654,38 @@ wb$add_fill(sheet = ws_name, dims = header_dims,
             color = wb_color("FF2C3E50"))
 wb$add_cell_style(sheet = ws_name, dims = header_dims,
                   wrap_text = "true", horizontal = "left", vertical = "center")
+
+# Per-language header colors (distinct for each language)
+lang_colors <- c(
+  "en" = "FF2C3E50",   # dark blue-gray (same as structural)
+  "ro" = "FF8E44AD",   # purple
+  "fr" = "FF2980B9",   # blue
+  "es" = "FFD35400",   # orange
+  "de" = "FF27AE60",   # green
+  "ar" = "FFC0392B",   # red
+  "pt" = "FF16A085",   # teal
+  "zh-Hans" = "FF7D3C98" # dark purple
+)
+# Fallback palette for unlisted languages
+extra_colors <- c("FF1ABC9C", "FFE67E22", "FF3498DB", "FF9B59B6",
+                  "FF34495E", "FFE74C3C", "FF2ECC71", "FFF39C12")
+
+for (lang in lang_order) {
+  col_idx <- which(grepl(paste0("^(text|help)_", lang, "$"), out_cols))
+  if (length(col_idx) == 0) next
+
+  # Get color: named palette, or cycle through extras
+  if (lang %in% names(lang_colors)) {
+    fill_hex <- lang_colors[[lang]]
+  } else {
+    # Assign from extra palette based on position
+    pos <- which(lang_order == lang) - length(intersect(lang_order, names(lang_colors)))
+    fill_hex <- extra_colors[((pos - 1) %% length(extra_colors)) + 1]
+  }
+
+  lang_dims <- wb_dims(rows = 1, cols = col_idx)
+  wb$add_fill(sheet = ws_name, dims = lang_dims, color = wb_color(fill_hex))
+}
 
 # --- Data font (Arial 10 for all data cells) ---
 if (nrow_out > 0) {
@@ -674,20 +852,110 @@ wb$add_fill(sheet = "Survey Settings Reference", dims = ss_header_dims,
 wb$set_col_widths(sheet = "Survey Settings Reference",
                   cols = 1:3, widths = c(22, 15, 60))
 
+# --- Relevance & Validation ---
+wb$add_worksheet(sheet = "Relevance & Validation")
+rv_data <- data.frame(
+  Pattern = c(
+    "SKIP PATTERNS (relevance column)", #1
+    "Single answer", "OR condition", "AND condition", #2-4
+    "Not equal", "Numeric >=", "Range", #5-7
+    "Not empty", "Is empty", #8-9
+    "MC checkbox", "MC not checked", "Array cell", #10-12
+    "", #13
+    "VALIDATION (validation column, regex)", #14
+    "Email", "Numbers only", "Letters only", "Phone", #15-18
+    "", #19
+    "EXPRESSION MANAGER (em_validation_q)", #20
+    "Sum equals value", "Min value", "Max value", "Range check", #21-24
+    "", #25
+    "QUOTA NOTES", #26
+    "Quotas cap responses per segment (not skip logic).", #27
+    "Only list-type questions (L, !) can be quota members.", #28
+    "For numeric ranges, use hidden list Q with default expression."), #29
+  Column = c(
+    "", #1
+    "relevance", "relevance", "relevance", #2-4
+    "relevance", "relevance", "relevance", #5-7
+    "relevance", "relevance", #8-9
+    "relevance", "relevance", "relevance", #10-12
+    "", #13
+    "", #14
+    "validation", "validation", "validation", "validation", #15-18
+    "", #19
+    "", #20
+    "em_validation_q", "em_validation_q", "em_validation_q", "em_validation_q", #21-24
+    "", #25
+    "", #26
+    "", "", "See Quotas sheet"), #27-29
+  Example = c(
+    "", #1
+    "smoking == 'A1'", "smoking == 'A1' || smoking == 'A2'", "age >= 18 && gender == 'F'", #2-4
+    "smoking != 'A4'", "age >= 65", "age >= 18 && age <= 45", #5-7
+    "!is_empty(email)", "is_empty(email)", #8-9
+    "exercise_SQ001 == 'Y'", "exercise_SQ001 != 'Y'", "dietfreq_SQ001 == 'A1'", #10-12
+    "", #13
+    "", #14
+    "/^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\\.[a-zA-Z]{2,}$/", "/^[0-9]+$/", "/^[a-zA-Z]+$/", "/^[+]?[0-9\\s()-]{7,}$/", #15-18
+    "", #19
+    "", #20
+    "self.NAOK == 100", "self.NAOK >= 0", "self.NAOK <= 200", "self.NAOK >= 18 && self.NAOK <= 99", #21-24
+    "", #25
+    "", #26
+    "", "", "{if(age>=40,'O40','U40')}"), #27-29
+  Description = c(
+    "", #1
+    "Show if answer code = A1", "|| means OR", "&& means AND", #2-4
+    "Show if NOT A4", "Show if 65+", "Ages 18-45 only", #5-7
+    "Show if answered", "Show if not answered", #8-9
+    "Show if item checked", "Show if item not checked", "Show if specific cell", #10-12
+    "", #13
+    "", #14
+    "Email format", "Digits only", "Letters only", "Phone format", #15-18
+    "", #19
+    "", #20
+    "Sum must equal 100", "Minimum value", "Maximum value", "Value range", #21-24
+    "", #25
+    "", #26
+    "Defined in Quotas sheet", "Not N, S, T question types", "Hidden Q workaround"), #27-29
+  stringsAsFactors = FALSE
+)
+wb$add_data(sheet = "Relevance & Validation", x = rv_data)
+rv_header_dims <- wb_dims(rows = 1, cols = 1:4)
+wb$add_font(sheet = "Relevance & Validation", dims = rv_header_dims,
+            name = "Arial", size = "10", color = wb_color("FFFFFFFF"), bold = "true")
+wb$add_fill(sheet = "Relevance & Validation", dims = rv_header_dims,
+            color = wb_color("FF34495E"))
+wb$set_col_widths(sheet = "Relevance & Validation",
+                  cols = 1:4, widths = c(30, 18, 50, 45))
+
+# Bold section headers
+rv_section_rows <- which(rv_data$Pattern != "" & rv_data$Column == "" & rv_data$Example == "")
+for (sr in rv_section_rows) {
+  wb$add_font(sheet = "Relevance & Validation",
+              dims = wb_dims(rows = sr + 1, cols = 1),
+              name = "Arial", size = "11", color = wb_color("FF2C3E50"), bold = "true")
+}
+
 # --- Instructions ---
 wb$add_worksheet(sheet = "Instructions")
 instr <- data.frame(
   Topic = c("Workflow",
-            "", "",
+            "", "", "",
             "Languages",
             "", "",
             "Row Classes",
             "", "", "", "", "",
             "Key Rules",
-            "", "", "", ""),
+            "", "", "", "",
+            "Quotas",
+            "", "", "", "", "", "", "",
+            "", "", "", "", "", "",
+            "Quota Workflow",
+            "", "", ""),
   Detail = c("This file was generated from a LimeSurvey TSV export.",
              "Edit the Survey Design sheet, then run xlsx_to_limesurvey_tsv.R to convert back to .txt.",
              "Import the .txt file in LimeSurvey: Create Survey > Import.",
+             paste0("The forward script expects input_file = \"", sub("\\.[^.]+$", "", input_file), ".xlsx\""),
              "Each language has text_xx and help_xx columns side by side.",
              "The forward script auto-detects languages from these columns.",
              "Untranslated cells fall back to the base language automatically.",
@@ -701,7 +969,25 @@ instr <- data.frame(
              "Question codes (name column): alphanumeric only, no underscores.",
              "S rows: leave text_xx empty for non-base languages.",
              "SL rows: translate all 4 fields per language.",
-             "G/Q/SQ/A: translate text_xx; help_xx is optional."),
+             "G/Q/SQ/A: translate text_xx; help_xx is optional.",
+             "Quotas are defined in the separate Quotas sheet (one row per quota).",
+             "quota_name: unique name for this quota (e.g. 'Males North')",
+             "quota_limit: maximum responses before the quota triggers",
+             "active: Y = enforced, N = disabled. Set Y when ready to enforce.",
+             "quota_action: 1 = terminate silently, 2 = terminate and show message",
+             "autoload_url: 0 = no redirect, 1 = auto-redirect when quota full",
+             "message_xx columns: translated message shown when quota is full (per language)",
+             "question_code_N / answer_code_N: each pair links an answer to the quota (AND logic)",
+             "All members within a quota are ANDed: counts only when ALL members match.",
+             "Only list-type questions (L, !) can be quota members.",
+             "For numeric ranges, use a hidden list Q with always_hide=1 and default expression.",
+             "Add question_code_3/answer_code_3, etc. for more AND conditions.",
+             "If the Quotas sheet is missing or empty, the forward script skips quota processing.",
+             "Quota messages support all survey languages via message_xx columns.",
+             "1. Set active=N for all quotas while building/testing the survey.",
+             "2. Run xlsx_to_limesurvey_tsv.R, import TSV, test the survey.",
+             "3. When satisfied, set active=Y, re-run the script, and re-import.",
+             "4. Quotas become active in LimeSurvey after import."),
   stringsAsFactors = FALSE
 )
 wb$add_data(sheet = "Instructions", x = instr)
@@ -710,7 +996,90 @@ wb$add_font(sheet = "Instructions", dims = instr_header_dims,
             name = "Arial", size = "10", color = wb_color("FFFFFFFF"), bold = "true")
 wb$add_fill(sheet = "Instructions", dims = instr_header_dims,
             color = wb_color("FF34495E"))
-wb$set_col_widths(sheet = "Instructions", cols = 1:2, widths = c(15, 80))
+
+# Bold section headers in Instructions
+instr_section_rows <- which(instr$Topic != "")
+for (sr in instr_section_rows) {
+  wb$add_font(sheet = "Instructions",
+              dims = wb_dims(rows = sr + 1, cols = 1),
+              name = "Arial", size = "12", color = wb_color("FF2C3E50"), bold = "true")
+}
+
+wb$set_col_widths(sheet = "Instructions", cols = 1:2, widths = c(18, 85))
+
+# --- Quotas Sheet (if quotas exist) ---
+if (!is.null(quota_df) && nrow(quota_df) > 0) {
+  cat("  Writing Quotas sheet...\n")
+  wb$add_worksheet(sheet = "Quotas")
+  wb$add_data(sheet = "Quotas", x = quota_df)
+
+  q_ncol <- ncol(quota_df)
+  q_header_dims <- wb_dims(rows = 1, cols = 1:q_ncol)
+  wb$add_font(sheet = "Quotas", dims = q_header_dims,
+              name = "Arial", size = "10",
+              color = wb_color("FFFFFFFF"), bold = "true")
+  wb$add_fill(sheet = "Quotas", dims = q_header_dims,
+              color = wb_color("FF2C3E50"))
+  wb$add_cell_style(sheet = "Quotas", dims = q_header_dims,
+                    wrap_text = "true", horizontal = "center", vertical = "center")
+
+  # Color message_xx headers to match language columns in Survey Design
+  for (lang in lang_order) {
+    msg_idx <- which(grepl(paste0("^message_", lang, "$"), names(quota_df)))
+    if (length(msg_idx) == 0) next
+    if (lang %in% names(lang_colors)) {
+      fill_hex <- lang_colors[[lang]]
+    } else {
+      pos <- which(lang_order == lang) - length(intersect(lang_order, names(lang_colors)))
+      fill_hex <- extra_colors[((pos - 1) %% length(extra_colors)) + 1]
+    }
+    wb$add_fill(sheet = "Quotas", dims = wb_dims(rows = 1, cols = msg_idx),
+                color = wb_color(fill_hex))
+  }
+
+  # Member columns: slightly different shade
+  member_col_indices <- which(grepl("^(question|answer)_code", names(quota_df)))
+  if (length(member_col_indices) > 0) {
+    wb$add_fill(sheet = "Quotas", dims = wb_dims(rows = 1, cols = member_col_indices),
+                color = wb_color("FF34495E"))
+  }
+
+  # Data font
+  if (nrow(quota_df) > 0) {
+    q_data_dims <- wb_dims(rows = 2:(nrow(quota_df) + 1), cols = 1:q_ncol)
+    wb$add_font(sheet = "Quotas", dims = q_data_dims, name = "Arial", size = "10")
+  }
+
+  # Column widths
+  for (i in seq_along(names(quota_df))) {
+    cn <- names(quota_df)[i]
+    w <- if (cn == "quota_name") 22
+         else if (grepl("^message_", cn)) 40
+         else if (grepl("^question_code", cn)) 16
+         else if (grepl("^answer_code", cn)) 13
+         else 12
+    wb$set_col_widths(sheet = "Quotas", cols = i, widths = w)
+  }
+
+  # Conditional formatting: highlight active=Y rows green
+  active_col_idx <- which(names(quota_df) == "active")
+  if (length(active_col_idx) > 0) {
+    active_col_letter <- int2col(active_col_idx)
+    wb$add_dxfs_style(name = "cf_quota_active", bg_fill = wb_color("FFC6EFCE"))
+    wb$add_conditional_formatting(
+      sheet = "Quotas",
+      dims = wb_dims(rows = 2:(nrow(quota_df) + 100), cols = 1:q_ncol),
+      rule = paste0("$", active_col_letter, "2=\"Y\""),
+      style = "cf_quota_active",
+      type = "expression"
+    )
+  }
+
+  # Freeze header
+  wb$freeze_pane(sheet = "Quotas", first_row = TRUE)
+
+  cat(sprintf("  Quotas sheet: %d quotas written\n", nrow(quota_df)))
+}
 
 # ==============================================================================
 # STEP 9: Validation summary
@@ -734,6 +1103,9 @@ cat(sprintf("  Columns: %d (%d standard + %d language + %d advanced)\n",
             length(out_std),
             length(lang_cols),
             length(adv_keep)))
+if (!is.null(quota_df) && nrow(quota_df) > 0) {
+  cat(sprintf("  Quotas: %d (written to Quotas sheet)\n", nrow(quota_df)))
+}
 
 # ==============================================================================
 # STEP 10: Save workbook
@@ -747,5 +1119,8 @@ cat(sprintf("Columns:  %d\n", ncol(df_out)))
 cat(sprintf("Rich text: %d cells with HTML converted to Excel formatting\n", rich_text_count))
 cat(sprintf("Languages: %s (base: %s)\n",
             paste(lang_order, collapse = ", "), base_lang))
-cat(sprintf("\nNext step: edit in Excel, then run xlsx_to_limesurvey_tsv.R\n"))
+cat(sprintf("\nNext steps:\n"))
+cat(sprintf("  1. Edit the xlsx in Excel/LibreOffice\n"))
+cat(sprintf("  2. Set input_file <- \"%s\" in xlsx_to_limesurvey_tsv.R\n", output_file))
+cat(sprintf("  3. Run xlsx_to_limesurvey_tsv.R to generate the .txt for LimeSurvey import\n"))
 cat("Done!\n")
