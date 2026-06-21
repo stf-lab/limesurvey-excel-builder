@@ -8,7 +8,8 @@
 ##
 ## WHAT IT DOES:
 ##   - Reads a LimeSurvey TSV export file (.txt) with multiple languages
-##   - Collapses multi-language rows into side-by-side text_xx / help_xx columns
+##   - Collapses multi-language rows into side-by-side text_xx / help_xx /
+##     other_replace_text_xx columns
 ##   - Drops server-specific settings and empty attribute columns
 ##   - Converts HTML formatting (bold, italic, underline, color) to Excel rich text
 ##   - Produces an .xlsx file with the same structure as the master template:
@@ -293,6 +294,13 @@ for (col in potential_adv) {
 }
 adv_keep <- sort(adv_keep)
 
+# Handle other_replace_text as a translatable field (like text/help)
+# rather than a shared advanced attribute
+has_other_rt <- "other_replace_text" %in% all_tsv_cols
+if (has_other_rt) {
+  adv_keep <- setdiff(adv_keep, "other_replace_text")
+}
+
 if (length(adv_keep) > 0) {
   cat(sprintf("  Advanced attributes kept: %s\n", paste(adv_keep, collapse = ", ")))
 } else {
@@ -315,9 +323,18 @@ for (lang in lang_order) {
   lang_cols <- c(lang_cols, paste0("text_", lang), paste0("help_", lang))
 }
 
+# other_replace_text_xx columns (translatable "Other:" label per language)
+other_rt_lang_cols <- character(0)
+if (has_other_rt) {
+  for (lang in lang_order) {
+    other_rt_lang_cols <- c(other_rt_lang_cols, paste0("other_replace_text_", lang))
+  }
+}
+
 out_cols <- c(out_std[1:4],  # class, type/scale, name, relevance
               lang_cols,      # text_en, help_en, text_fr, help_fr, ...
               out_std[5:9],  # validation, mandatory, other, default, same_default
+              other_rt_lang_cols,  # other_replace_text_en, ...
               adv_keep)
 
 # Initialize output list
@@ -392,7 +409,15 @@ for (i in seq_len(nrow(content_rows))) {
     row[base_hc] <- if (is.na(content_rows$help[i])) "" else content_rows$help[i]
   }
 
-  # Translated text/help from other languages (positional match)
+  # Base language other_replace_text
+  if (has_other_rt) {
+    base_ort <- paste0("other_replace_text_", base_lang)
+    if (base_ort %in% out_cols) {
+      row[base_ort] <- if (is.na(content_rows$other_replace_text[i])) "" else content_rows$other_replace_text[i]
+    }
+  }
+
+  # Translated text/help/other_replace_text from other languages (positional match)
   for (lang in other_langs) {
     lang_df <- trans_rows[[lang]]
     if (i <= nrow(lang_df)) {
@@ -403,6 +428,13 @@ for (i in seq_len(nrow(content_rows))) {
       }
       if (hc %in% out_cols) {
         row[hc] <- if (is.na(lang_df$help[i])) "" else lang_df$help[i]
+      }
+      if (has_other_rt) {
+        ort_col <- paste0("other_replace_text_", lang)
+        if (ort_col %in% out_cols && "other_replace_text" %in% names(lang_df)) {
+          ort_val <- lang_df$other_replace_text[i]
+          row[ort_col] <- if (is.na(ort_val)) "" else ort_val
+        }
       }
     }
   }
@@ -590,7 +622,7 @@ rich_text_count <- 0
 # Store rich text objects: key = "row,col" -> fmt_txt object
 rich_text_cells <- list()
 
-text_help_col_indices <- which(grepl("^(text|help)_", out_cols))
+text_help_col_indices <- which(grepl("^(text|help|other_replace_text)_", out_cols))
 
 for (col_idx in text_help_col_indices) {
   col_name <- out_cols[col_idx]
@@ -687,6 +719,22 @@ for (lang in lang_order) {
   wb$add_fill(sheet = ws_name, dims = lang_dims, color = wb_color(fill_hex))
 }
 
+# Color other_replace_text_xx headers to match language colors
+if (has_other_rt) {
+  for (lang in lang_order) {
+    col_idx <- which(grepl(paste0("^other_replace_text_", lang, "$"), out_cols))
+    if (length(col_idx) == 0) next
+    if (lang %in% names(lang_colors)) {
+      fill_hex <- lang_colors[[lang]]
+    } else {
+      pos <- which(lang_order == lang) - length(intersect(lang_order, names(lang_colors)))
+      fill_hex <- extra_colors[((pos - 1) %% length(extra_colors)) + 1]
+    }
+    wb$add_fill(sheet = ws_name, dims = wb_dims(rows = 1, cols = col_idx),
+                color = wb_color(fill_hex))
+  }
+}
+
 # --- Data font (Arial 10 for all data cells) ---
 if (nrow_out > 0) {
   data_dims <- wb_dims(rows = 2:(nrow_out + 1), cols = 1:ncol_out)
@@ -767,6 +815,7 @@ for (i in seq_along(out_cols)) {
        else if (col_name == "relevance") 30
        else if (grepl("^text_", col_name)) 40
        else if (grepl("^help_", col_name)) 30
+       else if (grepl("^other_replace_text_", col_name)) 22
        else if (col_name %in% c("validation", "mandatory", "other")) 10
        else if (col_name %in% c("default", "same_default")) 12
        else 14
@@ -956,7 +1005,7 @@ instr <- data.frame(
              "Edit the Survey Design sheet, then run xlsx_to_limesurvey_tsv.R to convert back to .txt.",
              "Import the .txt file in LimeSurvey: Create Survey > Import.",
              paste0("The forward script expects input_file = \"", sub("\\.[^.]+$", "", input_file), ".xlsx\""),
-             "Each language has text_xx and help_xx columns side by side.",
+             "Each language has text_xx, help_xx, and other_replace_text_xx columns.",
              "The forward script auto-detects languages from these columns.",
              "Untranslated cells fall back to the base language automatically.",
              "S = Survey setting (text goes in base language column only)",
@@ -969,7 +1018,7 @@ instr <- data.frame(
              "Question codes (name column): alphanumeric only, no underscores.",
              "S rows: leave text_xx empty for non-base languages.",
              "SL rows: translate all 4 fields per language.",
-             "G/Q/SQ/A: translate text_xx; help_xx is optional.",
+             "G/Q/SQ/A: translate text_xx; help_xx and other_replace_text_xx are optional.",
              "Quotas are defined in the separate Quotas sheet (one row per quota).",
              "quota_name: unique name for this quota (e.g. 'Males North')",
              "quota_limit: maximum responses before the quota triggers",
@@ -1098,10 +1147,11 @@ if (length(q_underscore) > 0) {
 }
 
 cat(sprintf("  Languages: %s\n", paste(lang_order, collapse = ", ")))
-cat(sprintf("  Columns: %d (%d standard + %d language + %d advanced)\n",
+cat(sprintf("  Columns: %d (%d standard + %d language + %d other_replace_text + %d advanced)\n",
             length(out_cols),
             length(out_std),
             length(lang_cols),
+            length(other_rt_lang_cols),
             length(adv_keep)))
 if (!is.null(quota_df) && nrow(quota_df) > 0) {
   cat(sprintf("  Quotas: %d (written to Quotas sheet)\n", nrow(quota_df)))

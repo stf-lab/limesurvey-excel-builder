@@ -8,6 +8,7 @@
 ## MULTI-LANGUAGE SUPPORT:
 ##   Instead of duplicating rows per language, use columns:
 ##     text_en, help_en, text_fr, help_fr, text_de, help_de, ...
+##     other_replace_text_en, other_replace_text_fr, ...
 ##   The script auto-detects these columns and generates the correct
 ##   multi-language TSV rows for LimeSurvey import.
 ##   Untranslated rows automatically fall back to the base language text.
@@ -78,7 +79,9 @@ help_cols <- grep("^help_[a-zA-Z]{2}(-[a-zA-Z]{2,})?$", col_names_vec, value = T
 
 text_langs <- sub("^text_", "", text_cols)
 help_langs <- sub("^help_", "", help_cols)
-all_langs <- unique(c(text_langs, help_langs))
+other_rt_cols <- grep("^other_replace_text_[a-zA-Z]{2}(-[a-zA-Z]{2,})?$", col_names_vec, value = TRUE)
+other_rt_langs <- sub("^other_replace_text_", "", other_rt_cols)
+all_langs <- unique(c(text_langs, help_langs, other_rt_langs))
 
 # Determine base language from the FIRST text_xx column (columns-driven).
 # Additional languages are inferred from the remaining text_xx columns, in order.
@@ -179,6 +182,9 @@ cat(sprintf("  Base language: %s\n", base_lang))
 cat(sprintf("  All languages: %s\n", paste(lang_order, collapse = ", ")))
 cat(sprintf("  Text columns: %s\n", paste(text_cols, collapse = ", ")))
 cat(sprintf("  Help columns: %s\n", paste(help_cols, collapse = ", ")))
+if (length(other_rt_cols) > 0) {
+  cat(sprintf("  Other-replace-text columns: %s\n", paste(other_rt_cols, collapse = ", ")))
+}
 
 # ==============================================================================
 # STEP 3: Parse rich text runs from xlsx XML
@@ -761,7 +767,7 @@ cat(sprintf("HTML wrapping: %d fields processed\n", n_wrapped))
 
 cat("\nExpanding to multi-language TSV...\n")
 
-shared_cols <- setdiff(col_names_vec, c(text_cols, help_cols))
+shared_cols <- setdiff(col_names_vec, c(text_cols, help_cols, other_rt_cols))
 
 standard_shared <- c("id", "related_id", "class", "type/scale", "name",
                       "relevance", "validation", "mandatory", "other",
@@ -775,10 +781,17 @@ for (col in adv_cols) {
 }
 adv_cols_used <- sort(adv_cols_used)
 
+# If other_replace_text_xx columns exist, handle other_replace_text as a
+# translatable field (like text/help) rather than a shared attribute
+if (length(other_rt_cols) > 0) {
+  adv_cols_used <- setdiff(adv_cols_used, "other_replace_text")
+}
+
+other_rt_tsv <- if (length(other_rt_cols) > 0) "other_replace_text" else character(0)
 tsv_cols <- c("id", "related_id", "class", "type/scale", "name",
               "relevance", "text", "help", "language",
               "validation", "mandatory", "other", "default", "same_default",
-              adv_cols_used)
+              other_rt_tsv, adv_cols_used)
 
 if (length(adv_cols_used) > 0) {
   cat("Advanced attributes:", paste(adv_cols_used, collapse = ", "), "\n")
@@ -851,6 +864,9 @@ for (row_i in seq_len(nrow(df))) {
     r[["text"]] <- get_text(row_i, base_lang, "text")
     r[["help"]] <- get_text(row_i, base_lang, "help")
     r[["language"]] <- base_lang
+    if (length(other_rt_cols) > 0) {
+      r[["other_replace_text"]] <- get_text(row_i, base_lang, "other_replace_text")
+    }
     out_rows[[length(out_rows) + 1]] <- r
   }
 }
@@ -887,6 +903,9 @@ for (lang in other_langs) {
       r[[k]] <- ""
     }
     for (adv in adv_cols_used) r[[adv]] <- ""
+    if (length(other_rt_cols) > 0) {
+      r[["other_replace_text"]] <- get_text(row_i, lang, "other_replace_text")
+    }
 
     out_rows[[length(out_rows) + 1]] <- r
   }

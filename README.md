@@ -14,6 +14,7 @@ An Excel template + R conversion script that lets you author LimeSurvey surveys 
 - **Batch editing** — find/replace, copy/paste, and reorder questions using standard Excel operations
 - **Offline work** — no need for a running LimeSurvey instance during survey design
 - **Reusable blocks** — copy question groups between surveys by copying rows
+- **Randomization** — randomize answer options or subquestion rows via `random_order` and `random_group` columns
 - **Quota management** — define response quotas per segment directly in a dedicated Excel sheet, with translated quota-full messages and AND logic across multiple criteria
 
 ## Quick Start
@@ -47,9 +48,9 @@ Go to **[limesurvey-excel-builder](https://limesurvey-excel-builder.60.md/)**, u
 
 Instead of duplicating every row for each language, add columns:
 
-| text_en | help_en | text_fr | help_fr | text_es | help_es |
-|---------|---------|---------|---------|---------|---------|
-| What is your age? | | Quel est votre âge ? | | ¿Cuál es su edad? | |
+| text_en | help_en | text_fr | help_fr | text_es | help_es | other_replace_text_en | other_replace_text_fr | other_replace_text_es |
+|---------|---------|---------|---------|---------|---------|----------------------|----------------------|----------------------|
+| What is your age? | | Quel est votre âge ? | | ¿Cuál es su edad? | | Other (please specify) | Autre (veuillez préciser) | Otro (especifique) |
 
 The R script automatically:
 - Infers the base language from the **first** `text_xx` column (e.g. `text_en` → `en`)
@@ -121,6 +122,17 @@ Example: `question_code_1=gender, answer_code_1=M, question_code_2=region, answe
 - The R script generates the correct QTA, QTALS, and QTAM rows in the TSV with proper placement and ID linking
 - The inverse converter extracts quotas from existing TSV exports back into the flat Quotas sheet format
 
+### Randomization
+
+Randomize answer options or subquestion rows directly from the Excel template using two advanced attribute columns:
+
+| Column | Set on | Value | Effect |
+|--------|--------|-------|--------|
+| `random_order` | Q row | `1` | Randomizes the display order of A rows (List types) or SQ rows (Array types) for that question |
+| `random_group` | SQ or A rows | any string | Items sharing the same group name are randomized only within that group; items with different names or no group are randomized independently |
+
+For example, setting `random_order=1` on a List (L) question randomizes the answer choices each time a respondent sees the question. Setting it on an Array (F) question randomizes the subquestion rows. To keep certain items pinned (e.g., "None of the above" always last), leave `random_group` empty on those items while assigning a group name to the items that should shuffle.
+
 ### Per-Language Header Colors
 
 Each language gets a distinct header color in both the Survey Design and Quotas sheets, making it easy to visually identify language columns:
@@ -135,7 +147,7 @@ Each language gets a distinct header color in both the Survey Design and Quotas 
 | ar | Red |
 | pt | Teal |
 
-Additional languages are auto-assigned from a fallback palette. The same color is used for `text_xx`/`help_xx` in Survey Design and `message_xx` in Quotas.
+Additional languages are auto-assigned from a fallback palette. The same color is used for `text_xx`/`help_xx`/`other_replace_text_xx` in Survey Design and `message_xx` in Quotas.
 
 ## Requirements
 
@@ -168,10 +180,11 @@ The R script warns about codes containing underscores.
 
 ## Adding Translations
 
-1. Insert new columns after the existing language columns (e.g., `text_de`, `help_de`)
+1. Insert new columns after the existing language columns (e.g., `text_de`, `help_de`, `other_replace_text_de`)
 2. Translate the text for G, Q, SQ, A, and SL rows
-3. Leave `text_xx` empty for S rows (settings are language-independent)
-4. Run the R script — it auto-detects the new language columns and updates the language settings automatically
+3. Use `other_replace_text_xx` columns to translate the "Other" option label per language (e.g., "Other (please specify)" → "Autre (veuillez préciser)")
+4. Leave `text_xx` empty for S rows (settings are language-independent)
+5. Run the R script — it auto-detects the new language columns and updates the language settings automatically
 
 Untranslated cells automatically fall back to the base language, so you can translate incrementally.
 
@@ -185,6 +198,7 @@ The included example demonstrates:
 - Input validation (regex, numeric ranges)
 - Calculated fields (BMI from height/weight)
 - Array filtering (show only selected conditions)
+- Randomized answer/subquestion order (`random_order`)
 - Tailored closing message with expression logic
 - Multi-language content (English, French, Romanian, Spanish)
 - 6 example quotas (Males/Females × North/Center/South regions with translated messages)
@@ -207,7 +221,7 @@ The R script validates your survey before export:
 |-------|----------|
 | Colors don't show in Excel | Conditional formatting uses `bgColor` — may need a restart of Excel |
 | Import fails silently | Check that all question codes are alphanumeric (no underscores) |
-| Translations don't appear | The script auto-generates all rows per language; ensure columns are named `text_xx` / `help_xx` |
+| Translations don't appear | The script auto-generates all rows per language; ensure columns are named `text_xx` / `help_xx` / `other_replace_text_xx` |
 | Special characters garbled | Output uses UTF-8 with BOM — import should auto-detect encoding |
 | LimeSurvey renames codes | Codes with underscores get stripped; use alphanumeric only |
 | Import error on email/URL settings | LibreOffice auto-formats email addresses and URLs as colored hyperlinks. The script detects and ignores this formatting for S rows, but check the conversion log for warnings |
@@ -231,7 +245,7 @@ This is useful when you want to edit a survey that was originally created in the
 
 ### What it does
 
-- Collapses multi-language rows into side-by-side `text_xx` / `help_xx` columns
+- Collapses multi-language rows into side-by-side `text_xx` / `help_xx` / `other_replace_text_xx` columns
 - Converts HTML formatting back to Excel rich text (bold, italic, underline, color)
 - Extracts quotas (QTA/QTALS/QTAM) into the flat Quotas sheet format with per-language messages and AND-logic members
 - Drops server-specific settings for cross-server portability
