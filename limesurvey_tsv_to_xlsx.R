@@ -208,8 +208,16 @@ if (nrow(qta_rows) > 0) {
       autoload_url = qta$same_default
     )
 
-    # QTALS: messages per language (relevance = message)
+    # QTALS: messages per language (relevance = message, text = url, help = url_description)
     qtals_for_quota <- qtals_rows[qtals_rows$related_id == qta_id, ]
+    # Extract URL from first available QTALS row (same for all languages)
+    if (nrow(qtals_for_quota) > 0) {
+      qrow$quota_url <- if (!is.na(qtals_for_quota$text[1]) && qtals_for_quota$text[1] != "") qtals_for_quota$text[1] else ""
+      qrow$quota_url_description <- if (!is.na(qtals_for_quota$help[1]) && qtals_for_quota$help[1] != "") qtals_for_quota$help[1] else ""
+    } else {
+      qrow$quota_url <- ""
+      qrow$quota_url_description <- ""
+    }
     for (lang in lang_order) {
       msg_col <- paste0("message_", lang)
       lang_match <- qtals_for_quota[qtals_for_quota$language == lang, ]
@@ -244,7 +252,8 @@ if (nrow(qta_rows) > 0) {
   }
 
   # Build Quotas columns
-  q_cols <- c("quota_name", "quota_limit", "active", "quota_action", "autoload_url")
+  q_cols <- c("quota_name", "quota_limit", "active", "quota_action", "autoload_url",
+              "quota_url", "quota_url_description")
   for (lang in lang_order) q_cols <- c(q_cols, paste0("message_", lang))
   for (m in seq_len(max_members)) {
     q_cols <- c(q_cols, paste0("question_code_", m), paste0("answer_code_", m))
@@ -1024,7 +1033,9 @@ instr <- data.frame(
              "quota_limit: maximum responses before the quota triggers",
              "active: Y = enforced, N = disabled. Set Y when ready to enforce.",
              "quota_action: 1 = terminate silently, 2 = terminate and show message",
-             "autoload_url: 0 = no redirect, 1 = auto-redirect when quota full",
+             "autoload_url: 0 = no redirect, 1 = auto-redirect to quota_url when quota full",
+             "quota_url: redirect URL when the quota is full (per-quota, used when autoload_url=1)",
+             "quota_url_description: link text shown to the respondent (optional)",
              "message_xx columns: translated message shown when quota is full (per language)",
              "question_code_N / answer_code_N: each pair links an answer to the quota (AND logic)",
              "All members within a quota are ANDed: counts only when ALL members match.",
@@ -1103,6 +1114,8 @@ if (!is.null(quota_df) && nrow(quota_df) > 0) {
   for (i in seq_along(names(quota_df))) {
     cn <- names(quota_df)[i]
     w <- if (cn == "quota_name") 22
+         else if (cn == "quota_url") 35
+         else if (cn == "quota_url_description") 25
          else if (grepl("^message_", cn)) 40
          else if (grepl("^question_code", cn)) 16
          else if (grepl("^answer_code", cn)) 13

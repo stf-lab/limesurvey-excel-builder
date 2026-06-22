@@ -1001,6 +1001,8 @@ if ("Quotas" %in% quota_sheets) {
           }
         }
         qtals_row["relevance"] <- msg
+        qtals_row["text"]      <- if ("quota_url" %in% names(r)) tval(r$quota_url) else ""
+        qtals_row["help"]      <- if ("quota_url_description" %in% names(r)) tval(r$quota_url_description) else ""
         qtals_row["language"]  <- lang
         end_rows[[length(end_rows) + 1]] <- qtals_row
       }

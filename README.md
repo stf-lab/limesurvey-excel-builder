@@ -94,10 +94,10 @@ Row order matters: S → SL → G → Q → SQ → A → Q → SQ → A → ... 
 
 Define response quotas in the dedicated **Quotas** sheet — one row per quota, no TSV syntax needed:
 
-| quota_name | quota_limit | active | quota_action | autoload_url | message_en | message_ro | question_code_1 | answer_code_1 | question_code_2 | answer_code_2 |
-|---|---|---|---|---|---|---|---|---|---|---|
-| Males North | 15 | N | 2 | 0 | Quota full. Thank you. | Cota este plină. | gender | M | region | N |
-| Females North | 15 | N | 2 | 0 | Quota full. Thank you. | Cota este plină. | gender | F | region | N |
+| quota_name | quota_limit | active | quota_action | autoload_url | quota_url | quota_url_description | message_en | message_ro | question_code_1 | answer_code_1 | question_code_2 | answer_code_2 |
+|---|---|---|---|---|---|---|---|---|---|---|---|---|
+| Males North | 15 | N | 2 | 1 | https://example.com/done | Survey complete | Quota full. Thank you. | Cota este plină. | gender | M | region | N |
+| Females North | 15 | N | 2 | 1 | https://example.com/done | Survey complete | Quota full. Thank you. | Cota este plină. | gender | F | region | N |
 
 **Columns:**
 
@@ -105,7 +105,9 @@ Define response quotas in the dedicated **Quotas** sheet — one row per quota, 
 - **quota_limit** — maximum number of completed responses before the quota triggers
 - **active** — `Y` = enforced, `N` = disabled. Set `N` while testing, switch to `Y` when ready
 - **quota_action** — `1` = terminate survey silently, `2` = terminate and show message
-- **autoload_url** — `0` = no redirect, `1` = auto-redirect when quota is full
+- **autoload_url** — `0` = no redirect, `1` = auto-redirect to `quota_url` when quota is full
+- **quota_url** — redirect URL when the quota is full (per-quota; used when `autoload_url=1`)
+- **quota_url_description** — link text shown to the respondent (optional; only used if a URL is set)
 - **message_xx** — translated message shown when the quota is full (one column per survey language, falls back to base language if empty)
 - **question_code_N / answer_code_N** — each pair links an answer to the quota. Add `_3`, `_4`, etc. for more conditions
 
